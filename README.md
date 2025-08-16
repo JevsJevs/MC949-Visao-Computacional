@@ -30,3 +30,25 @@ Ex:
 **refactor(#10): melhorando implementação do alg. Y**
 
 ![conventionalCommits](./docs/Project-Organization/conventionalCommit.png)
+
+## Execução de código
+Primeiro cria-se o ambiente virtual python. Com o terminal aberto na pasta raiz do projeto, execute
+
+```bash
+python -m venv venv
+```
+Agora ativamos o ambiente virtual
+
+Linux/macOS:
+```bash
+source venv/bin/activate
+```
+Windows:
+```bash
+.\venv\Scripts\Activate
+```
+
+E instalamos as bibliotecas 
+```bash
+pip install -r requirements.txt
+```
