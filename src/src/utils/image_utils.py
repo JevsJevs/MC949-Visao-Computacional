@@ -1,3 +1,6 @@
+"""Utility functions to image loading and processing
+"""
+
 import cv2
 import os
 import sys
