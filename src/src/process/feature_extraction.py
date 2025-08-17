@@ -90,3 +90,57 @@ def ORB(
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     keypoints, descriptors = orb.detectAndCompute(gray, None)
     return keypoints, descriptors
+
+
+def AKAZE(
+    img: cv2.Mat,
+    descriptor_type: int = cv2.AKAZE_DESCRIPTOR_MLDB,
+    descriptor_size: int = 0,
+    descriptor_channels: int = 3,
+    threshold: float = 0.001,
+    nOctaves: int = 4,
+    nOctaveLayers: int = 4,
+    diffusivity: int = cv2.KAZE_DIFF_PM_G2
+) -> Tuple[List[cv2.KeyPoint], Optional[np.ndarray]]:
+    """
+    Run AKAZE on an image and return keypoints and descriptors.
+
+    Args:
+        img: Input image as a NumPy array (BGR).
+        descriptor_type: Type of descriptor (default = cv2.AKAZE_DESCRIPTOR_MLDB).
+            Options:
+              - cv2.AKAZE_DESCRIPTOR_KAZE
+              - cv2.AKAZE_DESCRIPTOR_KAZE_UPRIGHT
+              - cv2.AKAZE_DESCRIPTOR_MLDB
+              - cv2.AKAZE_DESCRIPTOR_MLDB_UPRIGHT
+        descriptor_size: Size of the descriptor in bits (0 = full size).
+        descriptor_channels: Number of channels in the descriptor (1–3).
+        threshold: Detector response threshold. Lower = more keypoints.
+        nOctaves: Maximum octave evolution of the image (scale-space depth).
+        nOctaveLayers: Number of sublevels per octave.
+        diffusivity: Diffusion type used in the nonlinear scale space.
+            Options:
+              - cv2.KAZE_DIFF_PM_G1
+              - cv2.KAZE_DIFF_PM_G2 (default)
+              - cv2.KAZE_DIFF_WEICKERT
+              - cv2.KAZE_DIFF_CHARBONNIER
+
+    Returns:
+        A tuple of (keypoints, descriptors).
+        - keypoints: List of detected keypoints.
+        - descriptors: NumPy array of shape (N, d) where d depends on descriptor,
+          or None if no keypoints found.
+    """
+    akaze = cv2.AKAZE_create(
+        descriptor_type=descriptor_type,
+        descriptor_size=descriptor_size,
+        descriptor_channels=descriptor_channels,
+        threshold=threshold,
+        nOctaves=nOctaves,
+        nOctaveLayers=nOctaveLayers,
+        diffusivity=diffusivity,
+    )
+
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    keypoints, descriptors = akaze.detectAndCompute(gray, None)
+    return keypoints, descriptors
