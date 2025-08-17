@@ -20,7 +20,6 @@ def show_image(img: cv2.Mat, show_axis: bool = False, pixel_size: float = 0.005)
     
     if not show_axis:
         plt.axis('off')  # Hide axes
-    plt.show()
     
     
 def show_image_with_keypoints(img: cv2.Mat, keypoints: list[cv2.KeyPoint], show_axis: bool = False, pixel_size: float = 0.005):
