@@ -52,3 +52,12 @@ E instalamos as bibliotecas
 ```bash
 pip install -r requirements.txt
 ```
+
+### Type linting
+Para ativar a execução do type linting (verificação de tipos) no código fonte, rode o seguinte comando ao abrir o venv:
+```bash
+pre-commit install
+```
+Agora antes de cada commit, o mypy rodará.
+
+É possível ignorar a verificação com git commit --no-verify , mas não é o ideal.
