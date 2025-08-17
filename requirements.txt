@@ -1,2 +1,8 @@
 opencv-python
 notebook
+ipykernel
+matplotlib
+numpy
+mypy
+pre-commit
+-e .

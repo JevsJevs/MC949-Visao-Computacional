@@ -30,3 +30,34 @@ Ex:
 **refactor(#10): melhorando implementação do alg. Y**
 
 ![conventionalCommits](./docs/Project-Organization/conventionalCommit.png)
+
+## Execução de código
+Primeiro cria-se o ambiente virtual python. Com o terminal aberto na pasta raiz do projeto, execute
+
+```bash
+python -m venv venv
+```
+Agora ativamos o ambiente virtual
+
+Linux/macOS:
+```bash
+source venv/bin/activate
+```
+Windows:
+```bash
+.\venv\Scripts\Activate
+```
+
+E instalamos as bibliotecas 
+```bash
+pip install -r requirements.txt
+```
+
+### Type linting
+Para ativar a execução do type linting (verificação de tipos) no código fonte, rode o seguinte comando ao abrir o venv:
+```bash
+pre-commit install
+```
+Agora antes de cada commit, o mypy rodará.
+
+É possível ignorar a verificação com git commit --no-verify , mas não é o ideal.
