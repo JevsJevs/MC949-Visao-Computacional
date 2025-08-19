@@ -1,2 +1,9 @@
 opencv-python
 notebook
+ipykernel
+matplotlib
+numpy
+mypy
+pre-commit
+scikit-learn
+-e .

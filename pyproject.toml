@@ -1,0 +1,12 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "src"
+version = "0.1.0"
+description = "Codigo canonico do projeto"
+authors = [
+  { name = "Elias Santos Martins", email = "e247057@dac.unicamp.br" }
+]
+dependencies = []
