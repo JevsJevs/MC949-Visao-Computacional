@@ -5,6 +5,7 @@ import cv2
 import os
 import sys
 from pathlib import Path
+from src.process import feature_extraction
 
 
 try:
@@ -62,5 +63,51 @@ def save_image(img: cv2.Mat, filename : str, path: str = "interim", img_format :
     output_path = BASE_DATA_PATH / path / f"{filename}.{img_format}"
     
     return cv2.imwrite(output_path, img)
+
+
+def draw_pairing_lines(img1, img2, alg:str ,filename : str, path: str = "interim", img_format : str = ".jpg"):
+
+    algs = {
+        "SIFT": feature_extraction.SIFT,
+        "ORB": feature_extraction.ORB,
+        "AKAZE": feature_extraction.AKAZE
+    }
+
+    func = algs.get(alg.upper())
+
+    kp1, des1 = func(img1)
+    kp2, des2 = func(img2)
+
+    bf = cv2.BFMatcher() 
+
+    matches = bf.knnMatch(des1, des2, k=2)
+
+    img_matches = cv2.drawMatches(img1, kp1, img2, kp2, david_loew_ratio_test(matches), None, flags=2)
+
+    save_image(img_matches, filename, path, img_format)
+
+    return img_matches
+
+
+def david_loew_ratio_test(matches, ratio=0.75):
+    """
+    Receives the matches returned by knnMatch and applies the ratio test.
+    
+    Args:
+        matches (list[list[cv2.DMatch]]): list of lists of matches returned by knnMatch.
+        ratio (float): Lowe's ratio test factor (default=0.75).
+    
+    Returns:
+        list[cv2.DMatch]: list of good (accepted) matches.
+    """
+    good_matches = []
+    for m, n in matches:  
+        if m.distance < ratio * n.distance:
+            good_matches.append(m)
+    return good_matches
+
+
+
+    
     
     
