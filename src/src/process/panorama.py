@@ -3,28 +3,52 @@ import numpy as np
 from src.utils import image_utils
 from src.process import feature_extraction
 
+def find_best_center_image(images: list) -> int:
+    """
+    Encontra o índice da melhor imagem de referência para o panorama.
+    A melhor imagem é a que tem o maior número de correspondências com as outras.
+    """
+    num_images = len(images)
+    match_counts = [0] * num_images
+    kp_descs = [feature_extraction.SIFT(img, nfeatures=1000) for img in images]
+
+    bf = cv2.BFMatcher(cv2.NORM_L2)
+
+    for i in range(num_images):
+        for j in range(i + 1, num_images):
+            _, des1 = kp_descs[i]
+            _, des2 = kp_descs[j]
+
+            if des1 is None or des2 is None:
+                continue
+
+            matches = bf.knnMatch(des1, des2, k=2)
+            good_matches = image_utils.david_loew_ratio_test(matches)
+            
+            match_counts[i] += len(good_matches)
+            match_counts[j] += len(good_matches)
+    
+    best_image_idx = np.argmax(match_counts)
+    print(f"A melhor imagem central para o panorama é a imagem {best_image_idx + 1}.")
+    return best_image_idx
+
 def stitch_panorama_tree_based(images: list) -> np.ndarray:
     if not images:
         return None
 
-    # Choose the middle image as the reference
-    center_idx = len(images) // 2
+    center_idx = find_best_center_image(images)
     center_image = images[center_idx]
     
-    # Store homography matrices for each image
     H_matrices = {}
     
-    # Calculate homographies for all images relative to the center image
     for i, img in enumerate(images):
         if i == center_idx:
             H_matrices[i] = np.identity(3)
             continue
         
-        # SIFT feature extraction
-        kp1, des1 = feature_extraction.SIFT(center_image, nfeatures=1000)
-        kp2, des2 = feature_extraction.SIFT(img, nfeatures=1000)
+        kp1, des1 = feature_extraction.SIFT(center_image, nfeatures=5000, contrastThreshold=0.02, edgeThreshold=15)
+        kp2, des2 = feature_extraction.SIFT(img, nfeatures=5000, contrastThreshold=0.02, edgeThreshold=15)
 
-        # Match features
         bf = cv2.BFMatcher(cv2.NORM_L2)
         matches = bf.knnMatch(des1, des2, k=2)
         good_matches = image_utils.david_loew_ratio_test(matches)
@@ -35,15 +59,15 @@ def stitch_panorama_tree_based(images: list) -> np.ndarray:
             H, _ = cv2.findHomography(dst_pts, src_pts, cv2.RANSAC, 5.0)
             H_matrices[i] = H
         else:
-            print(f"Not enough matches for image {i+1}, skipping.")
-            H_matrices[i] = None # Mark as unstitched
-
+            print(f"Não há correspondências suficientes para a imagem {i+1}, pulando.")
+            H_matrices[i] = None
+    
     # Determine final canvas size
     h_ref, w_ref = center_image.shape[:2]
     all_corners = np.float32([[0, 0], [0, h_ref], [w_ref, h_ref], [w_ref, 0]]).reshape(-1, 1, 2)
     
     for i, img in enumerate(images):
-        if i == center_idx or H_matrices[i] is None:
+        if i == center_idx or H_matrices.get(i) is None:
             continue
             
         h, w = img.shape[:2]
@@ -62,7 +86,9 @@ def stitch_panorama_tree_based(images: list) -> np.ndarray:
     final_canvas = np.zeros((ymax - ymin, xmax - xmin, 3), dtype=np.uint8)
     
     for i, img in enumerate(images):
-        if H_matrices[i] is None:
+        if H_matrices.get(i) is None:
+            # Adiciona a mensagem de depuração aqui
+            print(f"AVISO: Imagem {i+1} não foi inserida no panorama final.")
             continue
             
         H = H_matrices[i]
@@ -71,8 +97,6 @@ def stitch_panorama_tree_based(images: list) -> np.ndarray:
         warped_img = cv2.warpPerspective(img, final_H, (xmax - xmin, ymax - ymin))
         
         # Blend the images
-        # The blending logic is simplified here; a more robust solution would
-        # use feathering or multi-band blending for seamless transitions.
         mask = cv2.cvtColor(warped_img, cv2.COLOR_BGR2GRAY) > 0
         final_canvas[mask] = warped_img[mask]
         
@@ -96,15 +120,13 @@ def crop_black_borders_completely(img: np.ndarray) -> np.ndarray:
 
 if __name__ == "__main__":
     images_data = image_utils.load_raw_images("PanoramaWebDataset")
-    panorama_images = [images_data[str(i)] for i in range(1, 7)]
+    panorama_images = [images_data[str(i)] for i in range(1, 6)]
 
-    # Stitch all images at once using the tree-based method
     final_panorama_with_borders = stitch_panorama_tree_based(panorama_images)
 
     if final_panorama_with_borders is not None:
-        # Final cropping and saving
         final_panorama = crop_black_borders_completely(final_panorama_with_borders)
-        image_utils.save_image(final_panorama, "panorama_final")
+        image_utils.save_image(final_panorama, "panorama_final_optimized")
         print("Final panorama saved successfully.")
     else:
         print("Failed to create panorama.")
