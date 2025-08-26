@@ -93,16 +93,18 @@ def crop_black_borders_completely(img: np.ndarray) -> np.ndarray:
     return img[y:y+h, x:x+w]
 
 # Main script
-images_data = image_utils.load_raw_images("PanoramaWebDataset")
-panorama_images = [images_data[str(i)] for i in range(1, 7)]
 
-# Stitch all images at once using the tree-based method
-final_panorama_with_borders = stitch_panorama_tree_based(panorama_images)
+if __name__ == "__main__":
+    images_data = image_utils.load_raw_images("PanoramaWebDataset")
+    panorama_images = [images_data[str(i)] for i in range(1, 7)]
 
-if final_panorama_with_borders is not None:
-    # Final cropping and saving
-    final_panorama = crop_black_borders_completely(final_panorama_with_borders)
-    image_utils.save_image(final_panorama, "panorama_final")
-    print("Final panorama saved successfully.")
-else:
-    print("Failed to create panorama.")
+    # Stitch all images at once using the tree-based method
+    final_panorama_with_borders = stitch_panorama_tree_based(panorama_images)
+
+    if final_panorama_with_borders is not None:
+        # Final cropping and saving
+        final_panorama = crop_black_borders_completely(final_panorama_with_borders)
+        image_utils.save_image(final_panorama, "panorama_final")
+        print("Final panorama saved successfully.")
+    else:
+        print("Failed to create panorama.")
