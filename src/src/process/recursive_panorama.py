@@ -178,33 +178,20 @@ class ImageStitching:
 
         return final_result
     
-def recurse(image_list, no_of_images):
-    """Recursive function to get panorama of multiple images
-
-    Args:
-        image_list (List): list of numpy array of images
-        no_of_images (int): no of images read through cmdline
-
-    Returns:
-        result (numpy array): RGB panoramic image
-    """
-    if no_of_images == 2:
-        result, mapped_image = forward(
-            query_photo=image_list[no_of_images - 2],
-            train_photo=image_list[no_of_images - 1],
-        )
-
-        return result, mapped_image
+def recurse_tree(image_list):
+    """Versão em árvore balanceada para juntar imagens."""
+    n = len(image_list)
+    if n == 1:
+        return image_list[0]
+    elif n == 2:
+        result, _ = forward(image_list[0], image_list[1])
+        return result
     else:
-        result,_ = forward(
-            query_photo=image_list[no_of_images - 2],
-            train_photo=image_list[no_of_images - 1],
-        )
-        result_int8 = np.uint8(result)
-        result_rgb = cv2.cvtColor(result_int8, cv2.COLOR_BGR2RGB)
-        image_list[no_of_images - 2] = result_rgb
-
-        return recurse(image_list, no_of_images - 1)
+        mid = n // 2
+        left = recurse_tree(image_list[:mid])
+        right = recurse_tree(image_list[mid:])
+        result, _ = forward(left, right)
+        return result
     
 def forward(query_photo, train_photo):
     """Runs a forward pass using the ImageStitching() class in utils.py.
@@ -254,18 +241,16 @@ def forward(query_photo, train_photo):
     result = image_stitching.blending_smoothing(
         query_photo, train_photo, homography_matrix
     )
-    # mapped_image = cv2.drawMatches(train_photo, keypoints_train_image, query_photo, keypoints_query_image, matches[:100], None, flags=cv2.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS)
-    mapped_float_32 = np.float32(mapped_feature_image)
-    result_float32 = np.float32(result)
-    result_rgb = cv2.cvtColor(result_float32, cv2.COLOR_BGR2RGB)
-    mapped_feature_image_rgb = cv2.cvtColor(mapped_float_32, cv2.COLOR_BGR2RGB)
-    
+
+    result_rgb = np.uint8(result)
+    mapped_feature_image_rgb = np.uint8(mapped_feature_image)
+
     return result_rgb, mapped_feature_image_rgb
 
 
 def main():
     # Carrega imagens usando seu utilitário
-    images_data = image_utils.load_raw_images("FotosICMural")
+    images_data = image_utils.load_raw_images("PanoramaWebDataset")
     panorama_images = [images_data[str(i)] for i in range(1, 7)]
     
     if len(panorama_images) < 2:
@@ -285,7 +270,7 @@ def main():
     images = [cv2.cvtColor(img, cv2.COLOR_BGR2RGB) for img in resized_images]
 
     # Cria panorama usando a função recursiva
-    panorama, _ = recurse(images, len(images))
+    panorama = recurse_tree(images)
 
     # Converte de volta para BGR para salvar com OpenCV
     panorama_bgr = cv2.cvtColor(panorama, cv2.COLOR_RGB2BGR)
