@@ -6,4 +6,5 @@ numpy
 mypy
 pre-commit
 scikit-learn
+networkx
 -e .
