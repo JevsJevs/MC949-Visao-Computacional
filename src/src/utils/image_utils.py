@@ -60,9 +60,12 @@ def save_image(img: cv2.Mat, filename : str, path: str = "interim", img_format :
     """
     # Ensure format does not have a leading dot
     img_format = img_format.lstrip(".")
-    output_path = BASE_DATA_PATH / path / f"{filename}.{img_format}"
+    output_path = BASE_DATA_PATH / Path(path)
+    output_path.mkdir(parents=True, exist_ok=True)
+    finalDir = output_path / f"{filename}.{img_format}"
     
-    return cv2.imwrite(output_path, img)
+    success = cv2.imwrite(finalDir, img)
+    return success
 
 
 def draw_pairing_lines(img1: cv2.Mat, img2: cv2.Mat, alg: str, filename: str,
