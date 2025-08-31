@@ -58,12 +58,14 @@ class ImageStitching:
         Returns:
             matches (List): matches in features of train and query image
         """
-        bf = cv2.BFMatcher(cv2.NORM_L2, crossCheck=True)
+        bf = cv2.BFMatcher(cv2.NORM_L2)
 
-        best_matches = bf.match(features_train_image, features_query_image)
-        raw_matches = sorted(best_matches, key=lambda x: x.distance)
+        best_matches = bf.knnMatch(features_train_image, features_query_image, k=2)
+        #raw_matches = sorted(best_matches, key=lambda x: x.distance)
+    
+        good_matches = image_utils.david_loew_ratio_test(best_matches)
 
-        return raw_matches
+        return good_matches
 
     def compute_homography(
         self, keypoints_train_image, keypoints_query_image, matches, reprojThresh
@@ -219,7 +221,7 @@ def forward(query_photo, train_photo):
     matches = image_stitching.create_and_match_keypoints(
         features_train_image, features_query_image
     )
-
+    
     mapped_feature_image = cv2.drawMatches(
                         train_photo,
                         keypoints_train_image,

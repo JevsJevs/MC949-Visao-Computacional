@@ -156,5 +156,4 @@ def find_order(images: list[cv2.Mat]) -> list[int]:
     # path can be inverted
     if (is_inverted(path, images, matches_per_image, kp_descs)):
         return path[::-1]
-    
     return path
