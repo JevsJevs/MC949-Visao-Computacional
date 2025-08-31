@@ -37,9 +37,9 @@ def hamiltonian_path_brute_force(G: nx.Graph) -> list[int]:
 def hamiltonian_path_heuristic(G: nx.Graph) -> list[int]:
     n = G.number_of_nodes()
     
-    # começa com a aresta de menor peso
+    # começa com a aresta de maior peso
     u, v, w = max(G.edges(data="weight"), key=lambda x: x[2])
-    path = [u, v]  # inicia o caminho com os dois vértices da aresta mínima
+    path = [u, v]  # inicia o caminho com os dois vértices da aresta máxima
     
     # enquanto não tiver todos os nós
     while len(path) < n:
@@ -58,7 +58,7 @@ def hamiltonian_path_heuristic(G: nx.Graph) -> list[int]:
         if not candidates:
             break  # não conseguiu expandir mais
         
-        # pega a aresta candidata de menor custo
+        # pega a aresta candidata de maior custo
         w, node, side = max(candidates, key=lambda x: x[0])
         
         if side == "left":
