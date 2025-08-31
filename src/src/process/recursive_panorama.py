@@ -3,6 +3,7 @@ import cv2
 import sys
 from src.utils import image_utils
 from src.process import feature_extraction
+from src.process.blender import Blender
 
 
 class ImageStitching:
@@ -105,95 +106,23 @@ class ImageStitching:
             print(f"Minimum match count not satisfied cannot get homopgrahy")
             return None
 
-    def create_mask(self, query_image, train_image, version):
-        """Creates the mask using query and train images for blending the images,
-        using a gaussian smoothing window/kernel
-
-        Args:
-            query_image (numpy array)
-            train_image (numpy array)
-            version (str) == 'left_image' or 'right_image'
-
-        Returns:
-            masks
-        """
-        height_query_photo = query_image.shape[0]
-        width_query_photo = query_image.shape[1]
-        width_train_photo = train_image.shape[1]
-        height_panorama = height_query_photo
-        width_panorama = width_query_photo + width_train_photo
-        offset = int(self.smoothing_window_size / 2)
-        barrier = query_image.shape[1] - int(self.smoothing_window_size / 2)
-        mask = np.zeros((height_panorama, width_panorama))
-        if version == "left_image":
-            mask[:, barrier - offset : barrier + offset] = np.tile(
-                np.linspace(1, 0, 2 * offset).T, (height_panorama, 1)
-            )
-            mask[:, : barrier - offset] = 1
-        else:
-            mask[:, barrier - offset : barrier + offset] = np.tile(
-                np.linspace(0, 1, 2 * offset).T, (height_panorama, 1)
-            )
-            mask[:, barrier + offset :] = 1
-        return cv2.merge([mask, mask, mask])
-
-    def blending_smoothing(self, query_image, train_image, homography_matrix):
-        """blends both query and train image via the homography matrix,
-        and ensures proper blending and smoothing using masks created in create_masks()
-        to give a seamless panorama.
-
-        Args:
-            query_image (numpy array)
-            train_image (numpy array)
-            homography_matrix (numpy array): Homography to map images to a single plane
-
-        Returns:
-            panoramic image (numpy array)
-        """
-        height_img1 = query_image.shape[0]
-        width_img1 = query_image.shape[1]
-        width_img2 = train_image.shape[1]
-        height_panorama = height_img1
-        width_panorama = width_img1 + width_img2
-
-        panorama1 = np.zeros((height_panorama, width_panorama, 3))
-        mask1 = self.create_mask(query_image, train_image, version="left_image")
-        panorama1[0 : query_image.shape[0], 0 : query_image.shape[1], :] = query_image
-        panorama1 *= mask1
-        mask2 = self.create_mask(query_image, train_image, version="right_image")
-        panorama2 = (
-            cv2.warpPerspective(
-                train_image, homography_matrix, (width_panorama, height_panorama)
-            )
-            * mask2
-        )
-        result = panorama1 + panorama2
-
-        # remove extra blackspace
-        rows, cols = np.where(result[:, :, 0] != 0)
-        min_row, max_row = min(rows), max(rows) + 1
-        min_col, max_col = min(cols), max(cols) + 1
-
-        final_result = result[min_row:max_row, min_col:max_col, :]
-
-        return final_result
     
-def recurse_tree(image_list):
+def recurse_tree(image_list, blender):
     """Versão em árvore balanceada para juntar imagens."""
     n = len(image_list)
     if n == 1:
         return image_list[0]
     elif n == 2:
-        result, _ = forward(image_list[0], image_list[1])
+        result, _ = forward(image_list[0], image_list[1], blender)
         return result
     else:
         mid = n // 2
-        left = recurse_tree(image_list[:mid])
-        right = recurse_tree(image_list[mid:])
-        result, _ = forward(left, right)
+        left = recurse_tree(image_list[:mid], blender)
+        right = recurse_tree(image_list[mid:], blender)
+        result, _ = forward(left, right, blender)
         return result
     
-def forward(query_photo, train_photo):
+def forward(query_photo, train_photo, blender):
     """Runs a forward pass using the ImageStitching() class in utils.py.
     Takes in a query image and train image and runs entire pipeline to return
     a panoramic image.
@@ -238,7 +167,7 @@ def forward(query_photo, train_photo):
 
     (matches, homography_matrix, status) = M
 
-    result = image_stitching.blending_smoothing(
+    result = blender.blend_images(
         query_photo, train_photo, homography_matrix
     )
 
@@ -270,7 +199,8 @@ def main():
     images = [cv2.cvtColor(img, cv2.COLOR_BGR2RGB) for img in resized_images]
 
     # Cria panorama usando a função recursiva
-    panorama = recurse_tree(images)
+    blender = Blender("feathering")
+    panorama = recurse_tree(images, blender)
 
     # Converte de volta para BGR para salvar com OpenCV
     panorama_bgr = cv2.cvtColor(panorama, cv2.COLOR_RGB2BGR)
