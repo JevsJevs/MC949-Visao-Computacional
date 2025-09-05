@@ -7,10 +7,10 @@ name = "canon"
 version = "0.1.2"
 description = "Codigo canonico do projeto"
 authors = [
-  { name = "Elias Santos Martins", email = "e247057@dac.unicamp.br" }
-  { name = "João Eduardo Vasconcellos da Silva", email = "j248343@dac.unicamp.br" }
-  { name = "Hayla Pereira Belozi Vasconcellos", email = "h247156@dac.unicamp.br" }
-  { name = "Victor Manoel Rodrigues Guilherme", email = "v213307@dac.unicamp.br" }
+  { name = "Elias Santos Martins", email = "e247057@dac.unicamp.br" },
+  { name = "João Eduardo Vasconcellos da Silva", email = "j248343@dac.unicamp.br" },
+  { name = "Hayla Pereira Belozi Vasconcellos", email = "h247156@dac.unicamp.br" },
+  { name = "Victor Manoel Rodrigues Guilherme", email = "v213307@dac.unicamp.br" },
   { name = "Matheus Gasparotto Lozano", email = "m247275@dac.unicamp.br" }
 ]
 dependencies = []
