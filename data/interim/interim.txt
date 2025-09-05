@@ -1,3 +1,0 @@
-Dados com steps de pre processamento comum (Ex. drop de colunas/linhas incompletas)
-
-Definir como armazenar tratamentos experimentais distintos. Subpastas?
