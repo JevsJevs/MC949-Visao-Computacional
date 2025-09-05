@@ -5,7 +5,7 @@ import cv2
 import os
 import sys
 from pathlib import Path
-from src.process import feature_extraction
+from canon.T1.process import feature_extraction
 
 
 try:
