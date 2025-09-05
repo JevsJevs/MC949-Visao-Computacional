@@ -1,9 +1,9 @@
 import numpy as np
 import cv2
 import sys
-from src.utils import image_utils
-from src.process import feature_extraction
-from src.process.blender import Blender
+from canon.utils import image_utils
+from canon.T1.process import feature_extraction
+from canon.T1.process.blender import Blender
 
 
 class ImageStitching:

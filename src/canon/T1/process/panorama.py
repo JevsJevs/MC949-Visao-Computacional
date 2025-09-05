@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
-from src.utils import image_utils
-from src.process import feature_extraction
+from canon.utils import image_utils
+from canon.T1.process import feature_extraction
 
 def find_best_center_image(images: list) -> int:
     """

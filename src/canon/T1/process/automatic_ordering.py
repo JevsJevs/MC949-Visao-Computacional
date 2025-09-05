@@ -1,7 +1,7 @@
 import networkx as nx
 import cv2
-from src.process import feature_extraction
-from src.utils import image_utils
+from canon.T1.process import feature_extraction
+from canon.utils import image_utils
 import numpy as np
 import itertools
 
