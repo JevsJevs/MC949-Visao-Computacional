@@ -1,7 +1,7 @@
 import networkx as nx
 import cv2
 from canon.T1.process import feature_extraction
-from canon.utils import image_utils
+from canon.T1.plotting import plotting
 import numpy as np
 import itertools
 
@@ -85,7 +85,7 @@ def build_match_graph(kp_descs: list[np.ndarray], n: int) -> tuple[nx.Graph, dic
             kp2, des2 = kp_descs[j]
 
             matches = bf.knnMatch(des1, des2, k=2)
-            good_matches = image_utils.david_loew_ratio_test(matches)
+            good_matches = plotting.david_lowe_ratio_test(matches)
             
             if len(good_matches) < 4:
                 continue

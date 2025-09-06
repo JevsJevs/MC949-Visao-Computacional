@@ -119,7 +119,7 @@ def crop_black_borders_completely(img: np.ndarray) -> np.ndarray:
 # Main script
 
 if __name__ == "__main__":
-    images_data = image_utils.load_raw_images("PanoramaWebDataset")
+    images_data = image_utils.load_images("T1/raw/PanoramaWebDataset")
     panorama_images = [images_data[str(i)] for i in range(1, 6)]
 
     final_panorama_with_borders = stitch_panorama_tree_based(panorama_images)

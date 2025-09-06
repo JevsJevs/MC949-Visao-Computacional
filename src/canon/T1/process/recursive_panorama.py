@@ -179,7 +179,7 @@ def forward(query_photo, train_photo, blender):
 
 def main():
     # Carrega imagens usando seu utilitário
-    images_data = image_utils.load_raw_images("PanoramaWebDataset")
+    images_data = image_utils.load_images("T1/raw/PanoramaWebDataset")
     panorama_images = [images_data[str(i)] for i in range(1, 7)]
     
     if len(panorama_images) < 2:
