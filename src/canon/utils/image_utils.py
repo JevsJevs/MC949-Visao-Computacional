@@ -3,6 +3,7 @@
 
 import cv2
 import sys
+import numpy as np
 from pathlib import Path
 
 try:
@@ -17,7 +18,7 @@ current_dir = current_file.parent
 BASE_DATA_PATH = current_dir.parent.parent.parent / "data"
 
 
-def load_images(datasetDirFromData: str) -> dict[str, cv2.Mat]:
+def load_images(datasetDirFromData: str) -> dict[str, np.ndarray]:
     """
     Load all images from a raw panorama folder into a dictionary.
 
@@ -26,11 +27,11 @@ def load_images(datasetDirFromData: str) -> dict[str, cv2.Mat]:
             Ex: Dataset at path (data/T1/Dataset) -> datasetDirFromData = "T1/Dataset"
 
     Returns:
-        Dict[str, cv2.Mat]: A dictionary mapping filename (without extension)
+        Dict[str, np.ndarray]: A dictionary mapping filename (without extension)
                              to the loaded OpenCV image.
     """
     path = BASE_DATA_PATH / Path(datasetDirFromData)
-    images: dict[str, cv2.Mat] = {}
+    images: dict[str, np.ndarray] = {}
     
     for file in sorted(path.glob("*")):  # iterate over files
         if file.suffix.lower() in [".jpg", ".jpeg", ".png"]:
@@ -43,12 +44,12 @@ def load_images(datasetDirFromData: str) -> dict[str, cv2.Mat]:
     return images
 
 
-def save_image(img: cv2.Mat, filename : str, path: str = "interim", img_format : str = ".jpg") -> bool:
+def save_image(img: np.ndarray, filename : str, path: str = "interim", img_format : str = ".jpg") -> bool:
     """
     Save an OpenCV image to disk.
 
     Args:
-        img (cv2.Mat): The image to save.
+        img (np.ndarray): The image to save.
         filename (str): Name of the output file (without extension).
         path (str, optional): Subfolder under BASE_DATA_PATH to save the image. Default is "interim".
         format (str, optional): Image format/extension (e.g., 'jpg', 'png'). Default is 'jpg'.

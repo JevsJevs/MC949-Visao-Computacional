@@ -105,7 +105,7 @@ def build_match_graph(kp_descs: list[np.ndarray], n: int) -> tuple[nx.Graph, dic
 
 
 def is_inverted(path: list[int], 
-                images: list[cv2.Mat], 
+                images: list[np.ndarray], 
                 matches_per_image: dict[int, list[cv2.DMatch]], 
                 kp_descs: tuple[list[cv2.KeyPoint], np.ndarray]):
     
@@ -143,7 +143,7 @@ def is_inverted(path: list[int],
     
 
 
-def find_order(images: list[cv2.Mat]) -> list[int]:
+def find_order(images: list[np.ndarray]) -> list[int]:
     kp_descs = [feature_extraction.SIFT(img, nfeatures=1000) for img in images]
     
     G, matches_per_image = build_match_graph(kp_descs, len(images))

@@ -5,7 +5,7 @@ import numpy as np
 from typing import List, Tuple, Optional
 
 def SIFT(
-    img: cv2.Mat,
+    img: np.ndarray,
     nfeatures: int = 0,
     nOctaveLayers: int = 3,
     contrastThreshold: float = 0.04,
@@ -43,7 +43,7 @@ def SIFT(
 
 
 def ORB(
-    img: cv2.Mat,
+    img: np.ndarray,
     nfeatures: int = 500,
     scaleFactor: float = 1.2,
     nlevels: int = 8,
@@ -93,7 +93,7 @@ def ORB(
 
 
 def AKAZE(
-    img: cv2.Mat,
+    img: np.ndarray,
     descriptor_type: int = cv2.AKAZE_DESCRIPTOR_MLDB,
     descriptor_size: int = 0,
     descriptor_channels: int = 3,
