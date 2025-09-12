@@ -156,7 +156,7 @@ def draw_feature_comparison(images: Dict[str, np.ndarray],
     plt.savefig(save_file, dpi=150, bbox_inches='tight')
     plt.close()
     
-    print(f"✅ Comparação de features salva: {save_file}")
+    print(f" Comparação de features salva: {save_file}")
     
     # Also save individual keypoint images for each detector
     for detector in detectors:
@@ -173,7 +173,7 @@ def draw_feature_comparison(images: Dict[str, np.ndarray],
             # Save individual keypoint image
             individual_file = os.path.join(save_path, f"{detector}_{sample_image}_keypoints.jpg")
             cv2.imwrite(individual_file, img_with_kp)
-            print(f"✅ {detector} keypoints salvos: {individual_file}")
+            print(f" {detector} keypoints salvos: {individual_file}")
 
 
 def plot_3d_points(points_3d: np.ndarray,
