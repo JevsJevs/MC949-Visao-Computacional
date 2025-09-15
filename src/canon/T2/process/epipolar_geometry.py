@@ -7,6 +7,7 @@ import cv2
 import numpy as np
 from typing import List, Tuple, Optional, Dict, Set
 import itertools
+from tqdm import tqdm
 
 # Import from T1 for reuse
 from canon.T1.plotting.plotting import david_lowe_ratio_test
@@ -363,10 +364,8 @@ def match_image_collection(features: Dict[str, Tuple[List[cv2.KeyPoint], np.ndar
     
     print(f"Matching {len(pairs)} image pairs...")
     
-    for i, (img1, img2) in enumerate(pairs):
-        if i % 10 == 0:
-            print(f"  Progress: {i}/{len(pairs)} pairs processed")
-        
+    # Using tqdm for progress bar
+    for img1, img2 in tqdm(pairs, desc="Matching pairs", unit="pair"):
         result = matcher.match_image_pair(
             features[img1], features[img2], min_matches
         )

@@ -7,4 +7,5 @@ mypy
 pre-commit
 scikit-learn
 networkx
+tqdm
 -e ./src

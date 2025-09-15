@@ -7,6 +7,7 @@ import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 from typing import List, Tuple, Optional, Dict
+from tqdm import tqdm
 from canon.utils import image_utils
 
 
@@ -242,7 +243,10 @@ def visualize_matching_results(match_results: Dict[Tuple[str, str], Dict],
                          key=lambda x: x[1]['num_matches'], 
                          reverse=True)
     
-    for i, ((img1_name, img2_name), result) in enumerate(sorted_pairs[:save_pairs]):
+    # Use tqdm for progress when saving multiple match visualizations
+    for (img1_name, img2_name), result in tqdm(sorted_pairs[:save_pairs], 
+                                              desc="Saving match visualizations", 
+                                              unit="pair"):
         img1 = images[img1_name]
         img2 = images[img2_name]
         
@@ -261,7 +265,9 @@ def visualize_matching_results(match_results: Dict[Tuple[str, str], Dict],
         success = image_utils.save_image(img_matches, filename, save_path)
         
         if success:
-            print(f"Saved match visualization: {filename}")
+            # Only print for small datasets to avoid spam
+            if save_pairs <= 10:
+                print(f"Saved match visualization: {filename}")
 
 
 def create_matching_summary_plot(match_results: Dict[Tuple[str, str], Dict],

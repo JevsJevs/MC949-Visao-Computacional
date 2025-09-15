@@ -6,6 +6,7 @@ import cv2
 import numpy as np
 from typing import List, Tuple, Optional, Dict
 from pathlib import Path
+from tqdm import tqdm
 
 # Import from T1 for reuse
 from canon.T1.process import feature_extraction as t1_features
@@ -41,10 +42,14 @@ def extract_features_from_image_set(
     
     print(f"Extracting {detector_type} features from {len(images)} images...")
     
-    for img_name, img in images.items():
+    # Using tqdm for progress bar when processing many images
+    for img_name, img in tqdm(images.items(), desc=f"Extracting {detector_type}", unit="image"):
         keypoints, descriptors = detector_func(img, **detector_params)
         features[img_name] = (keypoints, descriptors)
-        print(f"  {img_name}: {len(keypoints) if keypoints else 0} keypoints")
+        
+        # Only print details for small datasets to avoid spam
+        if len(images) <= 10:
+            print(f"  {img_name}: {len(keypoints) if keypoints else 0} keypoints")
     
     return features
 
@@ -124,7 +129,12 @@ def extract_features_with_metadata(
     features_with_metadata = {}
     features = extract_features_from_image_set(images, detector_type, **detector_params)
     
-    for img_name, (keypoints, descriptors) in features.items():
+    # Add progress bar for metadata processing, especially when saving visualizations
+    desc = f"Processing {detector_type} metadata"
+    if save_visualizations:
+        desc += " + saving visualizations"
+    
+    for img_name, (keypoints, descriptors) in tqdm(features.items(), desc=desc, unit="image"):
         img = images[img_name]
         
         # Create metadata
