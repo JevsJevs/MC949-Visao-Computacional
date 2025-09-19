@@ -1,9 +1,10 @@
 import cv2
+import numpy as np
 from canon.T1.process import feature_extraction
 from canon.utils import image_utils
 
-def draw_pairing_lines(img1: cv2.Mat,
-                       img2: cv2.Mat,
+def draw_pairing_lines(img1: np.ndarray,
+                       img2: np.ndarray,
                        alg: str,
                        filename: str,
                        path: str = "T1/interim",
