@@ -360,3 +360,81 @@ def save_epipolar_visualization(img1: np.ndarray,
         print(f"Saved epipolar visualization: {filename}")
     else:
         print(f"Failed to save epipolar visualization: {filename}")
+
+
+def plot_point_cloud(points, title="Point Cloud", save_path=None):
+    """
+    Plota uma nuvem de pontos 3D com matplotlib.
+
+    Args:
+        points: array (N, 3) contendo pontos [x, y, z].
+        title: título do gráfico.
+        save_path: caminho do arquivo para salvar a figura (ex: "cloud.png").
+                   Se None, mostra a figura na tela.
+    """
+    if isinstance(points, list):
+        points = np.array(points)
+
+    fig = plt.figure(figsize=(8, 6))
+    ax = fig.add_subplot(111, projection="3d")
+
+    ax.scatter(points[:, 0], points[:, 1], points[:, 2],
+               c=points[:, 2], cmap="viridis", s=2)
+
+    ax.set_title(title)
+    ax.set_xlabel("X")
+    ax.set_ylabel("Y")
+    ax.set_zlabel("Z")
+
+    ax.set_xlim(-2000, 2000)
+    ax.set_ylim(-2000, 2000)
+
+    if save_path:
+        plt.savefig(save_path, dpi=300, bbox_inches="tight")
+        plt.close(fig)  # fecha para não abrir janela
+    else:
+        plt.show()
+        
+        
+def save_point_cloud_ply(points: np.ndarray,
+                         colors: np.ndarray = None,
+                         save_path: str = "cloud.ply") -> None:
+    """
+    Save a 3D point cloud in PLY format (MeshLab compatible).
+
+    Args:
+        points: (N, 3) array with 3D points
+        colors: (N, 3) array with RGB values [0-255] (optional)
+        save_path: output file path (.ply)
+    """
+    if isinstance(points, list):
+        points = np.array(points)
+    if colors is not None and isinstance(colors, list):
+        colors = np.array(colors)
+
+    if colors is None:
+        # default: white
+        colors = np.ones_like(points) * 255
+
+    assert points.shape[0] == colors.shape[0], "Points and colors must have same length"
+
+    n_points = points.shape[0]
+
+    header = f"""ply
+format ascii 1.0
+element vertex {n_points}
+property float x
+property float y
+property float z
+property uchar red
+property uchar green
+property uchar blue
+end_header
+"""
+
+    with open(save_path, "w") as f:
+        f.write(header)
+        for p, c in zip(points, colors.astype(np.uint8)):
+            f.write(f"{p[0]} {p[1]} {p[2]} {c[0]} {c[1]} {c[2]}\n")
+
+    print(f"Saved point cloud with {n_points} points to {save_path}")

@@ -2,10 +2,11 @@ from canon import config
 import argparse
 from pathlib import Path
 import logging
-
+import os
+import numpy as np
 
 from canon.utils import image_utils
-from canon.T2.process import feature_extraction, epipolar_geometry
+from canon.T2.process import feature_extraction, epipolar_geometry, reconstruction_3d
 from canon.T2.plotting import visualization
 
 MIN_MATCHES = 30  # Mínimo de matches por par
@@ -71,10 +72,40 @@ def match_images(args, features):
         min_matches=MIN_MATCHES
     )
     
-    logger.info(f"\nEmparelhamento concluído!")
+    logger.info(f"Emparelhamento concluído!")
     logger.info(f"Pares bem-sucedidos: {len(match_results)}")
     
     return match_results
+
+
+def estimate_epipolar_matrix(args, images):
+    sample_img = images[0]
+    
+    K = epipolar_geometry.estimate_epipolar_matrix(sample_img)
+    
+    logger.info("Matriz epipolar estimada")
+    
+    logger.info(K)
+    
+    return K
+
+
+def construct_3d_points(args, features, match_results):
+    point_cloud = reconstruction_3d.construct_point_cloud(features, match_results)
+
+    save_dir = image_utils.BASE_DATA_PATH / args.image_dir / "3d_reconstruction"
+    save_path_image = image_utils.BASE_DATA_PATH / args.image_dir / "3d_reconstruction.png"
+    save_path_ply = image_utils.BASE_DATA_PATH / args.image_dir / "point_cloud.ply"
+    
+    os.makedirs(save_path, exist_ok = True)
+    
+    visualization.plot_point_cloud(point_cloud, save_path=save_path_image)
+    
+    # Com cores RGB
+    colors = (np.random.rand(point_cloud.shape[0], 3) * 255).astype(np.uint8)
+    save_point_cloud_ply(point_cloud, colors, save_path="colored_cloud.ply")
+    
+    return point_cloud
 
 
 if __name__ == "__main__":
@@ -105,4 +136,8 @@ if __name__ == "__main__":
     features = extract_features(args, images)
     
     match_results = match_images(args, features)
+    
+    K = estimate_epipolar_matrix(args, images)
+    
+    point_cloud = construct_3d_points(args, features, match_results)
     
