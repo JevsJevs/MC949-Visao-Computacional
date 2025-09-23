@@ -7,6 +7,7 @@ import cv2
 import numpy as np
 from typing import List, Tuple, Optional, Dict, Set
 import itertools
+from scipy.optimize import least_squares
 from tqdm import tqdm
 
 # Import from T1 for reuse
@@ -270,10 +271,8 @@ class Triangulator:
     def triangulate_points(self,
                           pts1: np.ndarray,
                           pts2: np.ndarray,
-                          R1: np.ndarray,
-                          t1: np.ndarray,
-                          R2: np.ndarray,
-                          t2: np.ndarray) -> np.ndarray:
+                          P1: np.ndarray,
+                          P2: np.ndarray, repeat: bool) -> np.ndarray:
         """
         Triangulate 3D points from two views.
         
@@ -289,17 +288,17 @@ class Triangulator:
             3D points in homogeneous coordinates (4xN)
         """
         # Create projection matrices
-        P1 = self.camera_matrix @ np.hstack([R1, t1.reshape(-1, 1)])
-        P2 = self.camera_matrix @ np.hstack([R2, t2.reshape(-1, 1)])
-        
-        # Reshape points for triangulation
-        pts1_norm = pts1.reshape(-1, 2).T
-        pts2_norm = pts2.reshape(-1, 2).T
-        
-        # Triangulate
-        points_4d = cv2.triangulatePoints(P1, P2, pts1_norm, pts2_norm)
-        
-        return points_4d
+        if not repeat:
+            points1 = np.transpose(pts1)
+            points2 = np.transpose(pts2)
+        else:
+            points1 = pts1
+            points2 = pts2
+
+        cloud = cv2.triangulatePoints(P1, P2, points1, points2)
+        cloud = cloud / cloud[3]
+
+        return points1, points2, cloud
     
     def convert_to_3d(self, points_4d: np.ndarray) -> np.ndarray:
         """
@@ -391,3 +390,112 @@ def estimate_epipolar_matrix(sample_img):
     ], dtype=np.float32)
 
     return K
+
+def ReprojectionError(X, pts, Rt, K, homogenity):
+    total_error = 0
+    R = Rt[:3, :3]
+    t = Rt[:3, 3]
+
+    r, _ = cv2.Rodrigues(R)
+    if homogenity == 1:
+        X = cv2.convertPointsFromHomogeneous(X.T)
+
+    p, _ = cv2.projectPoints(X, r, t, K, distCoeffs=None)
+    p = p[:, 0, :]
+    p = np.float32(p)
+    pts = np.float32(pts)
+    if homogenity == 1:
+        total_error = cv2.norm(p, pts.T, cv2.NORM_L2)
+    else:
+        total_error = cv2.norm(p, pts, cv2.NORM_L2)
+    pts = pts.T
+    tot_error = total_error / len(p)
+    #print(p[0], pts[0])
+
+    return tot_error, X, p
+
+def PnP(X, p, K, d, p_0, initial):
+    # print(X.shape, p.shape, p_0.shape)
+    if initial == 1:
+        X = X[:, 0, :]
+        p = p.T
+        p_0 = p_0.T
+
+    ret, rvecs, t, inliers = cv2.solvePnPRansac(X, p, K, d, cv2.SOLVEPNP_ITERATIVE)
+    # print(X.shape, p.shape, t, rvecs)
+    R, _ = cv2.Rodrigues(rvecs)
+
+    if inliers is not None:
+        p = p[inliers[:, 0]]
+        X = X[inliers[:, 0]]
+        p_0 = p_0[inliers[:, 0]]
+
+    return R, t, p, X, p_0
+
+def OptimReprojectionError(x):
+	Rt = x[0:12].reshape((3,4))
+	K = x[12:21].reshape((3,3))
+	rest = len(x[21:])
+	rest = int(rest * 0.4)
+	p = x[21:21 + rest].reshape((2, int(rest/2)))
+	X = x[21 + rest:].reshape((int(len(x[21 + rest:])/3), 3))
+	R = Rt[:3, :3]
+	t = Rt[:3, 3]
+	
+	total_error = 0
+	
+	p = p.T
+	num_pts = len(p)
+	error = []
+	r, _ = cv2.Rodrigues(R)
+	
+	p2d, _ = cv2.projectPoints(X, r, t, K, distCoeffs = None)
+	p2d = p2d[:, 0, :]
+	#print(p2d[0], p[0])
+	for idx in range(num_pts):
+		img_pt = p[idx]
+		reprojected_pt = p2d[idx]
+		er = (img_pt - reprojected_pt)**2
+		error.append(er)
+	
+	err_arr = np.array(error).ravel()/num_pts
+	
+	print(np.sum(err_arr))
+	#err_arr = np.sum(err_arr)
+	
+
+	return err_arr
+
+def BundleAdjustment(points_3d, temp2, Rtnew, K, r_error):
+
+	# Set the Optimization variables to be optimized
+	opt_variables = np.hstack((Rtnew.ravel(), K.ravel()))
+	opt_variables = np.hstack((opt_variables, temp2.ravel()))
+	opt_variables = np.hstack((opt_variables, points_3d.ravel()))
+
+	error = np.sum(OptimReprojectionError(opt_variables))
+	corrected_values = least_squares(fun = OptimReprojectionError, x0 = opt_variables, gtol = r_error)
+
+	corrected_values = corrected_values.x
+	Rt = corrected_values[0:12].reshape((3,4))
+	K = corrected_values[12:21].reshape((3,3))
+	rest = len(corrected_values[21:])
+	rest = int(rest * 0.4)
+	p = corrected_values[21:21 + rest].reshape((2, int(rest/2)))
+	X = corrected_values[21 + rest:].reshape((int(len(corrected_values[21 + rest:])/3), 3))
+	p = p.T
+	
+	return X, p, Rt
+
+def Triangulation(P1, P2, pts1, pts2, K, repeat):
+    if not repeat:
+        points1 = np.transpose(pts1)
+        points2 = np.transpose(pts2)
+    else:
+        points1 = pts1
+        points2 = pts2
+
+    cloud = cv2.triangulatePoints(P1, P2, points1, points2)
+    cloud = cloud / cloud[3]
+
+    return points1, points2, cloud
