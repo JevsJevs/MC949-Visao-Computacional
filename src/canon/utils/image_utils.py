@@ -65,3 +65,53 @@ def save_image(img: np.ndarray, filename : str, path: str = "interim", img_forma
     
     success = cv2.imwrite(finalDir, img)
     return success
+
+def Draw_points(image, pts, repro):
+    if repro == False:
+        image = cv2.drawKeypoints(image, pts, image, color=(0, 255, 0), flags=0)
+    else:
+        for p in pts:
+            image = cv2.circle(image, tuple(p), 2, (0, 0, 255), -1)
+    return image
+
+def img_downscale(img, downscale):
+	downscale = int(downscale/2)
+	i = 1
+	while(i <= downscale):
+		img = cv2.pyrDown(img)
+		i = i + 1
+	return img
+
+def to_ply(path, point_cloud, colors, densify):
+    out_points = point_cloud.reshape(-1, 3) * 200
+    out_colors = colors.reshape(-1, 3)
+    print(out_colors.shape, out_points.shape)
+    verts = np.hstack([out_points, out_colors])
+
+    # cleaning point cloud
+    mean = np.mean(verts[:, :3], axis=0)
+    temp = verts[:, :3] - mean
+    dist = np.sqrt(temp[:, 0] ** 2 + temp[:, 1] ** 2 + temp[:, 2] ** 2)
+    #print(dist.shape, np.mean(dist))
+    indx = np.where(dist < np.mean(dist) + 300)
+    verts = verts[indx]
+    #print( verts.shape)
+    ply_header = '''ply
+		format ascii 1.0
+		element vertex %(vert_num)d
+		property float x
+		property float y
+		property float z
+		property uchar blue
+		property uchar green
+		property uchar red
+		end_header
+		'''
+    if not densify:
+        with open('../../data/T2/results/' + 'sparse.ply', 'w') as f:
+            f.write(ply_header % dict(vert_num=len(verts)))
+            np.savetxt(f, verts, '%f %f %f %d %d %d')
+    else:
+        with open('../../data/T2/results/' + 'dense.ply', 'w') as f:
+            f.write(ply_header % dict(vert_num=len(verts)))
+            np.savetxt(f, verts, '%f %f %f %d %d %d')
