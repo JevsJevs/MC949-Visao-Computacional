@@ -9,4 +9,5 @@ scikit-learn
 networkx
 tqdm
 open3d-python
+open3d
 -e ./src
