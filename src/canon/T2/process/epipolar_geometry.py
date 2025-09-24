@@ -376,3 +376,18 @@ def match_image_collection(features: Dict[str, Tuple[List[cv2.KeyPoint], np.ndar
     
     print(f"Successfully matched {successful_pairs}/{len(pairs)} pairs")
     return match_results
+
+
+def estimate_epipolar_matrix(sample_img):
+    h, w = sample_img.shape[:2]
+
+    fx = fy = max(w, h)  # Distância focal aproximada
+    cx, cy = w/2, h/2    # Centro da imagem
+
+    K = np.array([
+        [fx, 0, cx],
+        [0, fy, cy],
+        [0, 0, 1]
+    ], dtype=np.float32)
+
+    return K

@@ -122,7 +122,7 @@ def recurse_tree(image_list, blender):
         result, _ = forward(left, right, blender)
         return result
     
-def forward(query_photo, train_photo, blender):
+def forward(query_photo, train_photo, blenderr):
     """Runs a forward pass using the ImageStitching() class in utils.py.
     Takes in a query image and train image and runs entire pipeline to return
     a panoramic image.
@@ -167,7 +167,7 @@ def forward(query_photo, train_photo, blender):
 
     (matches, homography_matrix, status) = M
 
-    result = blender.blend_images(
+    result = blenderr.blend_images(
         query_photo, train_photo, homography_matrix
     )
 
