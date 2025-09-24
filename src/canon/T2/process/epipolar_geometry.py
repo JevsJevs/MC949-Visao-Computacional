@@ -377,11 +377,14 @@ def match_image_collection(features: Dict[str, Tuple[List[cv2.KeyPoint], np.ndar
     return match_results
 
 
-def estimate_epipolar_matrix(sample_img):
+
+
+
+def estimate_epipolar_matrix(sample_img: np.ndarray) -> np.ndarray:
     h, w = sample_img.shape[:2]
 
     fx = fy = max(w, h)  # Distância focal aproximada
-    cx, cy = w/2, h/2    # Centro da imagem
+    cx, cy = w / 2, h / 2  # Centro da imagem
 
     K = np.array([
         [fx, 0, cx],
@@ -391,8 +394,15 @@ def estimate_epipolar_matrix(sample_img):
 
     return K
 
-def ReprojectionError(X, pts, Rt, K, homogenity):
-    total_error = 0
+
+def ReprojectionError(
+    X: np.ndarray,
+    pts: np.ndarray,
+    Rt: np.ndarray,
+    K: np.ndarray,
+    homogenity: int
+) -> Tuple[float, np.ndarray, np.ndarray]:
+    total_error = 0.0
     R = Rt[:3, :3]
     t = Rt[:3, 3]
 
@@ -410,19 +420,24 @@ def ReprojectionError(X, pts, Rt, K, homogenity):
         total_error = cv2.norm(p, pts, cv2.NORM_L2)
     pts = pts.T
     tot_error = total_error / len(p)
-    #print(p[0], pts[0])
 
     return tot_error, X, p
 
-def PnP(X, p, K, d, p_0, initial):
-    # print(X.shape, p.shape, p_0.shape)
+
+def PnP(
+    X: np.ndarray,
+    p: np.ndarray,
+    K: np.ndarray,
+    d: Optional[np.ndarray],
+    p_0: np.ndarray,
+    initial: int
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     if initial == 1:
         X = X[:, 0, :]
         p = p.T
         p_0 = p_0.T
 
     ret, rvecs, t, inliers = cv2.solvePnPRansac(X, p, K, d, cv2.SOLVEPNP_ITERATIVE)
-    # print(X.shape, p.shape, t, rvecs)
     R, _ = cv2.Rodrigues(rvecs)
 
     if inliers is not None:
@@ -432,62 +447,71 @@ def PnP(X, p, K, d, p_0, initial):
 
     return R, t, p, X, p_0
 
-def OptimReprojectionError(x):
-	Rt = x[0:12].reshape((3,4))
-	K = x[12:21].reshape((3,3))
-	rest = len(x[21:])
-	rest = int(rest * 0.4)
-	p = x[21:21 + rest].reshape((2, int(rest/2)))
-	X = x[21 + rest:].reshape((int(len(x[21 + rest:])/3), 3))
-	R = Rt[:3, :3]
-	t = Rt[:3, 3]
-	
-	total_error = 0
-	
-	p = p.T
-	num_pts = len(p)
-	error = []
-	r, _ = cv2.Rodrigues(R)
-	
-	p2d, _ = cv2.projectPoints(X, r, t, K, distCoeffs = None)
-	p2d = p2d[:, 0, :]
-	#print(p2d[0], p[0])
-	for idx in range(num_pts):
-		img_pt = p[idx]
-		reprojected_pt = p2d[idx]
-		er = (img_pt - reprojected_pt)**2
-		error.append(er)
-	
-	err_arr = np.array(error).ravel()/num_pts
-	
-	print(np.sum(err_arr))
-	#err_arr = np.sum(err_arr)
-	
 
-	return err_arr
+def OptimReprojectionError(x: np.ndarray) -> np.ndarray:
+    Rt = x[0:12].reshape((3, 4))
+    K = x[12:21].reshape((3, 3))
+    rest = len(x[21:])
+    rest = int(rest * 0.4)
+    p = x[21:21 + rest].reshape((2, int(rest / 2)))
+    X = x[21 + rest:].reshape((int(len(x[21 + rest:]) / 3), 3))
+    R = Rt[:3, :3]
+    t = Rt[:3, 3]
 
-def BundleAdjustment(points_3d, temp2, Rtnew, K, r_error):
+    p = p.T
+    num_pts = len(p)
+    error = []
+    r, _ = cv2.Rodrigues(R)
 
-	# Set the Optimization variables to be optimized
-	opt_variables = np.hstack((Rtnew.ravel(), K.ravel()))
-	opt_variables = np.hstack((opt_variables, temp2.ravel()))
-	opt_variables = np.hstack((opt_variables, points_3d.ravel()))
+    p2d, _ = cv2.projectPoints(X, r, t, K, distCoeffs=None)
+    p2d = p2d[:, 0, :]
+    for idx in range(num_pts):
+        img_pt = p[idx]
+        reprojected_pt = p2d[idx]
+        er = (img_pt - reprojected_pt) ** 2
+        error.append(er)
 
-	error = np.sum(OptimReprojectionError(opt_variables))
-	corrected_values = least_squares(fun = OptimReprojectionError, x0 = opt_variables, gtol = r_error)
+    err_arr = np.array(error).ravel() / num_pts
+    print(np.sum(err_arr))
 
-	corrected_values = corrected_values.x
-	Rt = corrected_values[0:12].reshape((3,4))
-	K = corrected_values[12:21].reshape((3,3))
-	rest = len(corrected_values[21:])
-	rest = int(rest * 0.4)
-	p = corrected_values[21:21 + rest].reshape((2, int(rest/2)))
-	X = corrected_values[21 + rest:].reshape((int(len(corrected_values[21 + rest:])/3), 3))
-	p = p.T
-	
-	return X, p, Rt
+    return err_arr
 
-def Triangulation(P1, P2, pts1, pts2, K, repeat):
+
+def BundleAdjustment(
+    points_3d: np.ndarray,
+    temp2: np.ndarray,
+    Rtnew: np.ndarray,
+    K: np.ndarray,
+    r_error: float
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+
+    opt_variables = np.hstack((Rtnew.ravel(), K.ravel()))
+    opt_variables = np.hstack((opt_variables, temp2.ravel()))
+    opt_variables = np.hstack((opt_variables, points_3d.ravel()))
+
+    _ = np.sum(OptimReprojectionError(opt_variables))
+    corrected_values = least_squares(fun=OptimReprojectionError, x0=opt_variables, gtol=r_error)
+
+    corrected_values = corrected_values.x
+    Rt = corrected_values[0:12].reshape((3, 4))
+    K = corrected_values[12:21].reshape((3, 3))
+    rest = len(corrected_values[21:])
+    rest = int(rest * 0.4)
+    p = corrected_values[21:21 + rest].reshape((2, int(rest / 2)))
+    X = corrected_values[21 + rest:].reshape((int(len(corrected_values[21 + rest:]) / 3), 3))
+    p = p.T
+
+    return X, p, Rt
+
+
+def Triangulation(
+    P1: np.ndarray,
+    P2: np.ndarray,
+    pts1: np.ndarray,
+    pts2: np.ndarray,
+    K: np.ndarray,
+    repeat: bool
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     if not repeat:
         points1 = np.transpose(pts1)
         points2 = np.transpose(pts2)
@@ -500,5 +524,10 @@ def Triangulation(P1, P2, pts1, pts2, K, repeat):
 
     return points1, points2, cloud
 
-def get_intrinsic_matrix():
-    return np.array([[2393.952166119461, -3.410605131648481e-13, 932.3821770809047], [0, 2398.118540286656, 628.2649953288065], [0, 0, 1]])
+
+def get_intrinsic_matrix() -> np.ndarray:
+    return np.array([
+        [2393.952166119461, -3.410605131648481e-13, 932.3821770809047],
+        [0, 2398.118540286656, 628.2649953288065],
+        [0, 0, 1]
+    ])
