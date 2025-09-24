@@ -58,6 +58,16 @@ Primeiro cria-se o ambiente virtual python. Com o terminal aberto na pasta raiz 
 
 Windows:
 ```bash
+py -3.10 -m venv venv310 
+```
+
+Linux/macOS:
+```bash
+source venv310/bin/activate
+```
+
+Windows:
+```bash
 .\venv310\Scripts\Activate
 ```
 
