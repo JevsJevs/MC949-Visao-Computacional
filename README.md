@@ -31,7 +31,7 @@ Ex:
 
 ![conventionalCommits](./docs/Project-Organization/conventionalCommit.png)
 
-## Execução de código
+## Execução de código T1
 Primeiro cria-se o ambiente virtual python. Com o terminal aberto na pasta raiz do projeto, execute
 
 ```bash
@@ -46,6 +46,19 @@ source venv/bin/activate
 Windows:
 ```bash
 .\venv\Scripts\Activate
+```
+
+E instalamos as bibliotecas 
+```bash
+pip install -r requirements.txt
+```
+
+## Execução de código T2
+Primeiro cria-se o ambiente virtual python. Com o terminal aberto na pasta raiz do projeto, execute
+
+Windows:
+```bash
+.\venv310\Scripts\Activate
 ```
 
 E instalamos as bibliotecas 
