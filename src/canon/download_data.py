@@ -34,7 +34,7 @@ def download_kaggle_dataset(dataset_slug, project_name):
     print(kaggle_download_path / project_name)
     print(dest_path)
     
-    shutil.move(kaggle_download_path / "T1", dest_path)
+    shutil.move(kaggle_download_path / project_name, dest_path)
     
     # 1
     os.rmdir(kaggle_download_path)
