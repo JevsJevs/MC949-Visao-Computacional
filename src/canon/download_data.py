@@ -16,11 +16,6 @@ def download_kaggle_dataset(dataset_slug, project_name):
         path (str): The directory where the dataset should be saved. 
                     Default is the current directory.
     """
-    # Create the directory if it doesn't exist
-    # path = image_utils.BASE_DATA_PATH / project_name
-    # if not os.path.exists(path):
-    #     os.makedirs(path)
-    #     print(f"Created directory: {path}")
 
     kaggle_download_path = kagglehub.dataset_download(dataset_slug)
     
