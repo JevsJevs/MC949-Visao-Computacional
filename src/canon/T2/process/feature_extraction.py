@@ -200,3 +200,77 @@ def extract_akaze_for_3d(images: Dict[str, np.ndarray], **kwargs) -> Dict[str, D
     default_params.update(kwargs)
     
     return extract_features_with_metadata(images, "AKAZE", **default_params)
+
+
+def find_features(img0: np.ndarray, img1: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Find feature correspondences between two images using SIFT + BFMatcher.
+
+    Args:
+        img0: First image (BGR or grayscale).
+        img1: Second image (BGR or grayscale).
+
+    Returns:
+        pts0: Nx2 array of matched keypoints from img0.
+        pts1: Nx2 array of matched keypoints from img1.
+    """
+    img0gray = cv2.cvtColor(img0, cv2.COLOR_BGR2GRAY)
+    img1gray = cv2.cvtColor(img1, cv2.COLOR_BGR2GRAY)
+
+    sift = cv2.SIFT_create()
+    kp0, des0 = sift.detectAndCompute(img0gray, None)
+    kp1, des1 = sift.detectAndCompute(img1gray, None)
+
+    bf = cv2.BFMatcher()
+    matches = bf.knnMatch(des0, des1, k=2)
+
+    good = []
+    for m, n in matches:
+        if m.distance < 0.70 * n.distance:
+            good.append(m)
+
+    pts0 = np.float32([kp0[m.queryIdx].pt for m in good])
+    pts1 = np.float32([kp1[m.trainIdx].pt for m in good])
+
+    return pts0, pts1
+
+
+def common_points(
+    pts1: np.ndarray,
+    pts2: np.ndarray,
+    pts3: np.ndarray
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """
+    Find common points between two sets of matches.
+
+    Args:
+        pts1: Points in image 2 found during 1-2 matching.
+        pts2: Points in image 2 found during 2-3 matching.
+        pts3: Points in image 3.
+
+    Returns:
+        indx1: Indices in pts1 that are common.
+        indx2: Indices in pts2 that are common.
+        temp_array1: Remaining (non-common) points in pts2.
+        temp_array2: Remaining (non-common) points in pts3.
+    """
+    indx1 = []
+    indx2 = []
+    for i in range(pts1.shape[0]):
+        a = np.where(pts2 == pts1[i, :])
+        if a[0].size != 0:
+            indx1.append(i)
+            indx2.append(a[0][0])
+
+    temp_array1 = np.ma.array(pts2, mask=False)
+    temp_array1.mask[indx2] = True
+    temp_array1 = temp_array1.compressed()
+    temp_array1 = temp_array1.reshape(int(temp_array1.shape[0] / 2), 2)
+
+    temp_array2 = np.ma.array(pts3, mask=False)
+    temp_array2.mask[indx2] = True
+    temp_array2 = temp_array2.compressed()
+    temp_array2 = temp_array2.reshape(int(temp_array2.shape[0] / 2), 2)
+
+    print("Shape New Array", temp_array1.shape, temp_array2.shape)
+    return np.array(indx1), np.array(indx2), temp_array1, temp_array2
