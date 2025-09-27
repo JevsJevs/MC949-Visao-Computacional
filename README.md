@@ -84,3 +84,10 @@ pre-commit install
 Agora antes de cada commit, o mypy rodará.
 
 É possível ignorar a verificação com git commit --no-verify , mas não é o ideal.
+
+## Download dos dados
+Com o venv ativado, realize o download dos dados rodando o script
+
+```bash
+python src/canon/download_data.py
+```

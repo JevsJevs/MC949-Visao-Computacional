@@ -10,4 +10,5 @@ networkx
 tqdm
 open3d-python
 open3d
+kagglehub
 -e ./src
