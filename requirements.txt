@@ -8,5 +8,5 @@ pre-commit
 scikit-learn
 networkx
 tqdm
-open3d-python
+kagglehub
 -e ./src
