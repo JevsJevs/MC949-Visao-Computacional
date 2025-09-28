@@ -4,109 +4,196 @@ from pathlib import Path
 import logging
 import os
 import numpy as np
-
+import cv2
+from scipy.optimize import least_squares
+import copy
+import open3d as o3d
+from tqdm import tqdm
+import matplotlib.pyplot as plt
 from canon.utils import image_utils
 from canon.T2.process import feature_extraction, epipolar_geometry, reconstruction_3d
 from canon.T2.plotting import visualization
 
-MIN_MATCHES = 30  # Mínimo de matches por par
+def build_3d_image(img_dir, res_dir, densify = False, bundle_adjustment = False):
+    densify = densify
+    bundle_adjustment = bundle_adjustment
+    print(densify)
+    print(bundle_adjustment)
+    
+    # Input Camera Intrinsic Parameters
+    K = epipolar_geometry.get_intrinsic_matrix()
 
+    downscale = 2
+    K[0,0] = K[0,0] / float(downscale)
+    K[1,1] = K[1,1] / float(downscale)
+    K[0,2] = K[0,2] / float(downscale)
+    K[1,2] = K[1,2] / float(downscale)
 
-def load_images(args):
-    image_dir = Path(args.image_dir)
-    
-    image_dir_full = image_utils.BASE_DATA_PATH / image_dir
-    
-    # Verificar se a pasta existe
-    if not image_dir_full.exists() or not image_dir_full.is_dir():
-        logger.error(f"Pasta de imagens não encontrada: {image_dir}")
-        exit(1)
-    
-    logger.info(f"Pasta de imagens: {image_dir}")
-    
-    images = image_utils.load_images(image_dir)
-    
-    logger.info(f"Carregadas {len(images)} imagens")
-    
-    return images
+    # Suppose if computationally heavy, then the images can be downsampled once. Note that downsampling is done in powers of two, that is, 1,2,4,8,...
 
+    # Current Path Directory
+    path = os.getcwd()
 
-def extract_features(args, images):
-    logger.info(f"Extraindo features usando detector: {args.detector}")
+    cv2.namedWindow('image', cv2.WINDOW_NORMAL)
+
+    posearr = K.ravel()
+    R_t_0 = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0]])
+    R_t_1 = np.empty((3, 4))
+
+    P1 = np.matmul(K, R_t_0)
+    Pref = P1
+    P2 = np.empty((3, 4))
+
+    Xtot = np.zeros((1, 3))
+    colorstot = np.zeros((1, 3))
     
-    if args.detector == "SIFT":
-        features_data = feature_extraction.extract_sift_for_3d(images, save_visualizations=False)
-    elif args.detector == "ORB":
-        features_data = feature_extraction.extract_orb_for_3d(images, save_visualizations=False)
-    elif args.detector == "AKAZE":
-        features_data = feature_extraction.extract_akaze_for_3d(images, save_visualizations=False)
+    img_list = sorted(os.listdir(img_dir))
+    images = []
+    for img in img_list:
+        if '.jpg' in img.lower() or '.png' in img.lower():
+            images = images + [img]
+    i = 0
+    
+    mesh = o3d.geometry.TriangleMesh.create_coordinate_frame()
+
+      # Added in case we will merge densification step in this code. Mostly it will be considered separately, though still added here.
+
+    # Setting the Reference two frames
+    img0 = image_utils.img_downscale(cv2.imread(img_dir + '/' + images[i]), downscale)
+    img1 = image_utils.img_downscale(cv2.imread(img_dir + '/' + images[i + 1]), downscale)
+
+    pts0, pts1 = feature_extraction.find_features(img0, img1)
+
+    # Finding essential matrix
+    E, mask = cv2.findEssentialMat(pts0, pts1, K, method=cv2.RANSAC, prob=0.999, threshold=0.4, mask=None)
+    pts0 = pts0[mask.ravel() == 1]
+    pts1 = pts1[mask.ravel() == 1]
+    # The pose obtained is for second image with respect to first image
+    _, R, t, mask = cv2.recoverPose(E, pts0, pts1, K)  # |finding the pose
+    pts0 = pts0[mask.ravel() > 0]
+    pts1 = pts1[mask.ravel() > 0]
+    R_t_1[:3, :3] = np.matmul(R, R_t_0[:3, :3])
+    R_t_1[:3, 3] = R_t_0[:3, 3] + np.matmul(R_t_0[:3, :3], t.ravel())
+
+    P2 = np.matmul(K, R_t_1)
+
+    # Triangulation is done for the first image pair. The poses will be set as reference, that will be used for increemental SfM
+    pts0, pts1, points_3d = epipolar_geometry.Triangulation(P1, P2, pts0, pts1, K, repeat=False)
+    # Backtracking the 3D points onto the image and calculating the reprojection error. Ideally it should be less than one.
+    # If found to be the culprit for an incorrect point cloud, enable Bundle Adjustment
+    error, points_3d, repro_pts = epipolar_geometry.ReprojectionError(points_3d, pts1, R_t_1, K, homogenity = 1)
+    print("REPROJECTION ERROR: ", error)
+    Rot, trans, pts1, points_3d, pts0t = epipolar_geometry.PnP(points_3d, pts1, K, np.zeros((5, 1), dtype=np.float32), pts0, initial=1)
+    #Xtot = np.vstack((Xtot, points_3d))
+
+    R = np.eye(3)
+    t = np.array([[0], [0], [0]], dtype=np.float32)
+
+    # Here, the total images to be take into consideration can be varied. Ideally, the whole set can be used, or a part of it. For whole lot: use tot_imgs = len(images) - 2
+    tot_imgs = len(images) - 2 
+
+    posearr = np.hstack((posearr, P1.ravel()))
+    posearr = np.hstack((posearr, P2.ravel()))
+
+    gtol_thresh = 0.5
+    #camera_orientation(path, mesh, R_t_0, 0)
+    #camera_orientation(path, mesh, R_t_1, 1)
+
+    for i in tqdm(range(tot_imgs)):
+        # Acquire new image to be added to the pipeline and acquire matches with image pair
+        img2 = image_utils.img_downscale(cv2.imread(img_dir + '/' + images[i + 2]), downscale)
+
+        # pts0,pts1 = find_features(img1,img2)
+
+        pts_, pts2 = feature_extraction.find_features(img1, img2)
+        if i != 0:
+            pts0, pts1, points_3d = epipolar_geometry.Triangulation(P1, P2, pts0, pts1, K, repeat = False)
+            pts1 = pts1.T
+            points_3d = cv2.convertPointsFromHomogeneous(points_3d.T)
+            points_3d = points_3d[:, 0, :]
         
+        # There gone be some common point in pts1 and pts_
+        # we need to find the indx1 of pts1 match with indx2 in pts_
+        indx1, indx2, temp1, temp2 = feature_extraction.common_points(pts1, pts_, pts2)
+        com_pts2 = pts2[indx2]
+        com_pts_ = pts_[indx2]
+        com_pts0 = pts0.T[indx1]
+        # We have the 3D - 2D Correspondence for new image as well as point cloud obtained from before. The common points can be used to find the world coordinates of the new image
+        # using Perspective - n - Point (PnP)
+        print("3D points:", points_3d[indx1].shape)
+        print("2D points:", com_pts2.shape)
         
-    features = {name: (data['keypoints'], data['descriptors']) 
-               for name, data in features_data.items()}
-    
-    # Exemplo de log de saída
-    for img_name, (kp, desc) in features.items():
-        logger.debug(f"{img_name}: {len(kp)} keypoints extraídos")
+        Rot, trans, com_pts2, points_3d, com_pts_ = epipolar_geometry.PnP(points_3d[indx1], com_pts2, K, np.zeros((5, 1), dtype=np.float32), com_pts_, initial = 0)
+        # Find the equivalent projection matrix for new image
+        Rtnew = np.hstack((Rot, trans))
+        Pnew = np.matmul(K, Rtnew)
 
-    logger.info("Features extraídas com sucesso")
+        #print(Rtnew)
+        error, points_3d, _ = epipolar_geometry.ReprojectionError(points_3d, com_pts2, Rtnew, K, homogenity = 0)
     
-    return features
+        
+        temp1, temp2, points_3d = epipolar_geometry.Triangulation(P2, Pnew, temp1, temp2, K, repeat = False)
+        error, points_3d, _ = epipolar_geometry.ReprojectionError(points_3d, temp2, Rtnew, K, homogenity = 1)
+        print("Reprojection Error: ", error)
+        # We are storing the pose for each image. This will be very useful during multiview stereo as this should be known
+        posearr = np.hstack((posearr, Pnew.ravel()))
 
-
-def match_images(args, features):
-    matcher = epipolar_geometry.ImagePairMatcher(
-        matcher_type="BF",  # Brute Force
-        ratio_threshold=0.75,
-        cross_check=False  # Desabilitado para usar ratio test
-    )
-
-    logger.info("Matcher configurado: Brute Force com Lowe's ratio test (0.75)")
-    
-    logger.info("Iniciando match das imagens")
-
-    match_results = epipolar_geometry.match_image_collection(
-        features=features,
-        matcher=matcher,
-        max_pairs=None,
-        min_matches=MIN_MATCHES
-    )
-    
-    logger.info(f"Emparelhamento concluído!")
-    logger.info(f"Pares bem-sucedidos: {len(match_results)}")
-    
-    return match_results
-
-
-def estimate_epipolar_matrix(args, images):
-    sample_img = images[0]
-    
-    K = epipolar_geometry.estimate_epipolar_matrix(sample_img)
-    
-    logger.info("Matriz epipolar estimada")
-    
-    logger.info(K)
-    
-    return K
+        # If bundle adjustment is considered. gtol_thresh represents the gradient threshold or the min jump in update that can happen. If the jump is smaller, optimization is terminated.
+        # Note that most of the time, the pipeline yield a reprojection error less than 0.1! However, it is often too slow, often close to half a minute per frame!
+        # For point cloud registration, the points are updated in a NumPy array. To visualize the object, the corresponding BGR color is also updated, which will be merged
+        # at the end with the 3D points
+        if bundle_adjustment:
+            print("Bundle Adjustment...")
+            points_3d, temp2, Rtnew = epipolar_geometry.BundleAdjustment(points_3d, temp2, Rtnew, K, gtol_thresh)
+            Pnew = np.matmul(K, Rtnew)
+            error, points_3d, _ = epipolar_geometry.ReprojectionError(points_3d, temp2, Rtnew, K, homogenity = 0)
+            print("Minimized error: ",error)
+            Xtot = np.vstack((Xtot, points_3d))
+            pts1_reg = np.array(temp2, dtype=np.int32)
+            colors = np.array([img2[l[1], l[0]] for l in pts1_reg])
+            colorstot = np.vstack((colorstot, colors))
+        else:
+            Xtot = np.vstack((Xtot, points_3d[:, 0, :]))
+            pts1_reg = np.array(temp2, dtype=np.int32)
+            colors = np.array([img2[l[1], l[0]] for l in pts1_reg.T])
+            colorstot = np.vstack((colorstot, colors)) 
+        #camera_orientation(path, mesh, Rtnew, i + 2)    
 
 
-def construct_3d_points(args, features, match_results):
-    point_cloud = reconstruction_3d.construct_point_cloud(features, match_results)
+        R_t_0 = np.copy(R_t_1)
+        P1 = np.copy(P2)
+        plt.scatter(i, error)
+        plt.pause(0.05)
 
-    save_dir = image_utils.BASE_DATA_PATH / args.image_dir / "3d_reconstruction"
-    save_path_image = image_utils.BASE_DATA_PATH / args.image_dir / "3d_reconstruction.png"
-    save_path_ply = image_utils.BASE_DATA_PATH / args.image_dir / "point_cloud.ply"
-    
-    os.makedirs(save_path, exist_ok = True)
-    
-    visualization.plot_point_cloud(point_cloud, save_path=save_path_image)
-    
-    # Com cores RGB
-    colors = (np.random.rand(point_cloud.shape[0], 3) * 255).astype(np.uint8)
-    save_point_cloud_ply(point_cloud, colors, save_path="colored_cloud.ply")
-    
-    return point_cloud
+        img0 = np.copy(img1)
+        img1 = np.copy(img2)
+        pts0 = np.copy(pts_)
+        pts1 = np.copy(pts2)
+        #P1 = np.copy(P2)
+        P2 = np.copy(Pnew)
+        cv2.imshow('image', img2)
+        if cv2.waitKey(1) & 0xff == ord('q'):
+            break
 
+    #plt.show()
+    cv2.destroyAllWindows()
+
+    # Finally, the obtained points cloud is registered and saved using open3d. It is saved in .ply form, which can be viewed using meshlab
+    print("Processing Point Cloud...")
+    print(Xtot.shape, colorstot.shape)
+    image_utils.to_ply(res_dir, Xtot, colorstot, densify)
+    print("Done!")
+
+
+def str2bool(v):
+    if isinstance(v, bool):
+        return v
+    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')
 
 if __name__ == "__main__":
     # Configurar logger
@@ -121,23 +208,26 @@ if __name__ == "__main__":
         required=True
     )
     parser.add_argument(
-        "--detector",
+        "--res_dir",
         type=str,
-        choices=["SIFT", "ORB", "AKAZE"],
-        default="SIFT",
-        help="Tipo de detector de features a ser usado"
+        help="Caminho para salvar resultado",
+        required=True
     )
+    parser.add_argument(
+    "--bundle_adjustment",
+    type=str2bool,
+    required=True,
+    help="Produzir Bundle Adjustment (True/False)"
+    )
+    parser.add_argument(
+        "--densify",
+        type=str2bool,
+        required=True,
+        help="Produzir densificação (True/False)"
+    )
+    
     args = parser.parse_args()
     
-    # --- Carregar imagens ---
-    images = load_images(args)
+    build_3d_image(args.image_dir, args.res_dir,args.densify, args.bundle_adjustment)
     
-    # --- Extrair features ---
-    features = extract_features(args, images)
-    
-    match_results = match_images(args, features)
-    
-    K = estimate_epipolar_matrix(args, images)
-    
-    point_cloud = construct_3d_points(args, features, match_results)
     
