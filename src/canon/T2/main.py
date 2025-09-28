@@ -219,7 +219,14 @@ if __name__ == "__main__":
     )
     
     args = parser.parse_args()
-    
-    build_3d_image(args.image_dir, args.res_dir,args.densify)
-    
-    
+
+    image_dir = args.image_dir
+    res_dir = args.res_dir
+    densify = args.densify
+
+    # Executar pipeline    
+    build_3d_image(image_dir, res_dir, densify)
+
+    # Visualizar nuvem de pontos
+    point_cloud_file = os.path.join(res_dir, "dense.ply" if densify else "sparse.ply")
+    visualization.visualize_point_cloud(point_cloud_file)
