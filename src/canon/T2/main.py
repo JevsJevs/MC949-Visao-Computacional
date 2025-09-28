@@ -10,6 +10,7 @@ import copy
 import open3d as o3d
 from tqdm import tqdm
 import matplotlib.pyplot as plt
+from canon.T2.utils import metrics
 from canon.utils import image_utils
 from canon.T2.process import feature_extraction, epipolar_geometry, reconstruction_3d
 from canon.T2.plotting import visualization
@@ -184,6 +185,26 @@ def build_3d_image(img_dir, res_dir, densify = False, bundle_adjustment = False)
     image_utils.to_ply(res_dir, Xtot, colorstot, densify)
     print("Done!")
 
+    # --- Metrics reporting ---
+    print("\n=== Reconstruction Metrics ===")
+    num_sparse_points = Xtot.shape[0]
+    num_dense_points = 0 if not densify else Xtot.shape[0]  # placeholder until MVS step
+    print(f"Sparse points: {num_sparse_points}")
+    print(f"Dense points: {num_dense_points}")
+
+    # Compute bounding box + density
+    bbox_stats = metrics.compute_bounding_box(Xtot)
+    print(f"Bounding box dimensions (m): "
+          f"dx={bbox_stats['dx']:.2f}, "
+          f"dy={bbox_stats['dy']:.2f}, "
+          f"dz={bbox_stats['dz']:.2f}")
+    print(f"Density (points/m²): {bbox_stats['density']:.2f}")
+
+    # Compute reprojection error of last registration
+    reproj_stats = metrics.compute_reprojection_errors(points_3d, com_pts2, Rtnew, K, homogenity=0)
+    print(f"Reprojection error (mean): {reproj_stats['mean_error']:.2f}")
+    print(f"Reprojection error (median): {reproj_stats['median_error']:.2f}")
+
 
 def str2bool(v):
     if isinstance(v, bool):
@@ -194,6 +215,7 @@ def str2bool(v):
         return False
     else:
         raise argparse.ArgumentTypeError('Boolean value expected.')
+
 
 if __name__ == "__main__":
     # Configurar logger
