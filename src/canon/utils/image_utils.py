@@ -105,7 +105,7 @@ def img_downscale(img: np.ndarray, downscale: int) -> np.ndarray:
     return img
 
 
-def to_ply(path: str, point_cloud: np.ndarray, colors: np.ndarray, densify: bool) -> None:
+def to_ply(path: str, point_cloud: np.ndarray, colors: np.ndarray, densify: bool, filename: str) -> None:
     """
     Save a 3D point cloud to a PLY file.
 
@@ -138,8 +138,8 @@ property uchar red
 end_header
 '''
 
-    filename = "dense.ply" if densify else "sparse.ply"
-    full_path = f"{path}/{filename}"
+    # filename = "dense.ply" if densify else "sparse.ply"
+    full_path = f"{path}/{filename}.ply"
 
     with open(full_path, 'w') as f:
         f.write(ply_header % dict(vert_num=len(verts)))
