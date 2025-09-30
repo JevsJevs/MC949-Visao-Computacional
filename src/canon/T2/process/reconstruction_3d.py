@@ -28,7 +28,7 @@ def _filter_points_by_reprojection(points_3d, image_points, R, t, K, reproj_thre
     return points_3d[mask], mask
 
 
-def _register_new_image(img, features, match_results, cameras, used_images, global_points, K, triangulator):
+def _register_new_image(img, features, match_results, cameras, used_images, global_points, K, triangulator, image_points_dict):
     """
     Registra uma nova imagem no SfM incremental:
     - Busca correspondências 2D–3D
@@ -82,6 +82,9 @@ def _register_new_image(img, features, match_results, cameras, used_images, glob
     cameras[img] = (R_new, t_new)
     used_images.add(img)
 
+    # Guardar correspondências 2D-3D para reprojeção
+    image_points_dict[img] = image_points
+
     # --- Triangular novos pontos com a referência ---
     pts_4d = triangulator.triangulate_points(
         pts_ref, pts_new,
@@ -101,6 +104,7 @@ def _register_new_image(img, features, match_results, cameras, used_images, glob
     print(f"Triangulados {len(new_points_3d)} pontos, mantidos {len(inliers_3d)} inliers")
 
     global_points.extend(inliers_3d.tolist())
+    image_points_dict[img] = image_points_new[mask]   # armazenar apenas inliers
 
     return True
 
@@ -134,11 +138,14 @@ def construct_point_cloud(features, match_results, K):
                                                 cameras[img2][0], cameras[img2][1])
     points_3d = triangulator.convert_to_3d(pts_4d).tolist()
 
+    # Criar dicionário de correspondências 2D-3D
+    image_points_dict = {}
+    image_points_dict[img1] = pts1.reshape(-1, 2)[:len(points_3d)]
+    image_points_dict[img2] = pts2.reshape(-1, 2)[:len(points_3d)]
+
     # --- Passo 2: adicionar novas imagens ---
     used_images = {img1, img2}
     remaining_images = set(features.keys()) - used_images
-
-    # global_points  = []
 
     for img in remaining_images:
         success = _register_new_image(
@@ -148,7 +155,9 @@ def construct_point_cloud(features, match_results, K):
             cameras=cameras,
             used_images=used_images,
             global_points=points_3d,
-            K=K
+            K=K,
+            triangulator=triangulator,
+            image_points_dict=image_points_dict
         )
         if success:
             print(f"Imagem {img} registrada com sucesso!")
@@ -156,4 +165,4 @@ def construct_point_cloud(features, match_results, K):
             print(f"Imagem {img} não pôde ser registrada.")
             
             
-    return points_3d
+    return points_3d, cameras, image_points_dict

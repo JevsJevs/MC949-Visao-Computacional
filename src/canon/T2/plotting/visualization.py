@@ -3,11 +3,14 @@ This module provides visualization functions for feature matching, epipolar geom
 and 3D point clouds.
 """
 
+from typing import Dict, List, Optional, Tuple
+
 import cv2
-import numpy as np
 import matplotlib.pyplot as plt
-from typing import List, Tuple, Optional, Dict
+import numpy as np
+import open3d as o3d
 from tqdm import tqdm
+
 from canon.utils import image_utils
 
 
@@ -438,3 +441,21 @@ end_header
             f.write(f"{p[0]} {p[1]} {p[2]} {c[0]} {c[1]} {c[2]}\n")
 
     print(f"Saved point cloud with {n_points} points to {save_path}")
+
+
+def visualize_point_cloud(file_path):
+    """
+    Reads a PLY file and visualizes it using Open3D.
+    Supports both point clouds and triangle meshes.
+    """
+    try:
+        pcd = o3d.io.read_point_cloud(file_path)
+        if pcd.has_points():
+            print(f"Visualizing point cloud from: {file_path}")
+            o3d.visualization.draw_geometries([pcd])
+            return
+
+        print(f"Error: Could not load valid point cloud or mesh from {file_path}")
+
+    except Exception as e:
+        print(f"An error occurred: {e}")

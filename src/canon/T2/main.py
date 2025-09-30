@@ -10,16 +10,12 @@ import copy
 import open3d as o3d
 from tqdm import tqdm
 import matplotlib.pyplot as plt
+from canon.T2.utils import metrics
 from canon.utils import image_utils
 from canon.T2.process import feature_extraction, epipolar_geometry, reconstruction_3d
 from canon.T2.plotting import visualization
 
-def build_3d_image(img_dir, res_dir, densify = False, bundle_adjustment = False):
-    densify = densify
-    bundle_adjustment = bundle_adjustment
-    print(densify)
-    print(bundle_adjustment)
-    
+def build_3d_image(img_dir, res_dir, densify = False):
     # Input Camera Intrinsic Parameters
     K = epipolar_geometry.get_intrinsic_matrix()
 
@@ -31,9 +27,6 @@ def build_3d_image(img_dir, res_dir, densify = False, bundle_adjustment = False)
 
     # Suppose if computationally heavy, then the images can be downsampled once. Note that downsampling is done in powers of two, that is, 1,2,4,8,...
 
-    # Current Path Directory
-    path = os.getcwd()
-
     cv2.namedWindow('image', cv2.WINDOW_NORMAL)
 
     posearr = K.ravel()
@@ -41,7 +34,6 @@ def build_3d_image(img_dir, res_dir, densify = False, bundle_adjustment = False)
     R_t_1 = np.empty((3, 4))
 
     P1 = np.matmul(K, R_t_0)
-    Pref = P1
     P2 = np.empty((3, 4))
 
     Xtot = np.zeros((1, 3))
@@ -138,31 +130,16 @@ def build_3d_image(img_dir, res_dir, densify = False, bundle_adjustment = False)
         # We are storing the pose for each image. This will be very useful during multiview stereo as this should be known
         posearr = np.hstack((posearr, Pnew.ravel()))
 
-        # If bundle adjustment is considered. gtol_thresh represents the gradient threshold or the min jump in update that can happen. If the jump is smaller, optimization is terminated.
-        # Note that most of the time, the pipeline yield a reprojection error less than 0.1! However, it is often too slow, often close to half a minute per frame!
-        # For point cloud registration, the points are updated in a NumPy array. To visualize the object, the corresponding BGR color is also updated, which will be merged
-        # at the end with the 3D points
-        if bundle_adjustment:
-            print("Bundle Adjustment...")
-            points_3d, temp2, Rtnew = epipolar_geometry.BundleAdjustment(points_3d, temp2, Rtnew, K, gtol_thresh)
-            Pnew = np.matmul(K, Rtnew)
-            error, points_3d, _ = epipolar_geometry.ReprojectionError(points_3d, temp2, Rtnew, K, homogenity = 0)
-            print("Minimized error: ",error)
-            Xtot = np.vstack((Xtot, points_3d))
-            pts1_reg = np.array(temp2, dtype=np.int32)
-            colors = np.array([img2[l[1], l[0]] for l in pts1_reg])
-            colorstot = np.vstack((colorstot, colors))
-        else:
-            Xtot = np.vstack((Xtot, points_3d[:, 0, :]))
-            pts1_reg = np.array(temp2, dtype=np.int32)
-            colors = np.array([img2[l[1], l[0]] for l in pts1_reg.T])
-            colorstot = np.vstack((colorstot, colors)) 
-        #camera_orientation(path, mesh, Rtnew, i + 2)    
+        Xtot = np.vstack((Xtot, points_3d[:, 0, :]))
+        pts1_reg = np.array(temp2, dtype=np.int32)
+        colors = np.array([img2[l[1], l[0]] for l in pts1_reg.T])
+        colorstot = np.vstack((colorstot, colors)) 
 
 
         R_t_0 = np.copy(R_t_1)
         P1 = np.copy(P2)
         plt.scatter(i, error)
+        plt.title("Reprojection Error")
         plt.pause(0.05)
 
         img0 = np.copy(img1)
@@ -184,6 +161,26 @@ def build_3d_image(img_dir, res_dir, densify = False, bundle_adjustment = False)
     image_utils.to_ply(res_dir, Xtot, colorstot, densify)
     print("Done!")
 
+    # --- Metrics reporting ---
+    print("\n=== Reconstruction Metrics ===")
+    num_sparse_points = Xtot.shape[0]
+    num_dense_points = 0 if not densify else Xtot.shape[0]  # placeholder until MVS step
+    print(f"Sparse points: {num_sparse_points}")
+    print(f"Dense points: {num_dense_points}")
+
+    # Compute bounding box + density
+    bbox_stats = metrics.compute_bounding_box(Xtot)
+    print(f"Bounding box dimensions (m): "
+          f"dx={bbox_stats['dx']:.2f}, "
+          f"dy={bbox_stats['dy']:.2f}, "
+          f"dz={bbox_stats['dz']:.2f}")
+    print(f"Density (points/m²): {bbox_stats['density']:.2f}")
+
+    # Compute reprojection error of last registration
+    reproj_stats = metrics.compute_reprojection_errors(points_3d, com_pts2, Rtnew, K, homogenity=0)
+    print(f"Reprojection error (mean): {reproj_stats['mean_error']:.2f}")
+    print(f"Reprojection error (median): {reproj_stats['median_error']:.2f}")
+
 
 def str2bool(v):
     if isinstance(v, bool):
@@ -194,6 +191,7 @@ def str2bool(v):
         return False
     else:
         raise argparse.ArgumentTypeError('Boolean value expected.')
+
 
 if __name__ == "__main__":
     # Configurar logger
@@ -214,12 +212,6 @@ if __name__ == "__main__":
         required=True
     )
     parser.add_argument(
-    "--bundle_adjustment",
-    type=str2bool,
-    required=True,
-    help="Produzir Bundle Adjustment (True/False)"
-    )
-    parser.add_argument(
         "--densify",
         type=str2bool,
         required=True,
@@ -227,7 +219,14 @@ if __name__ == "__main__":
     )
     
     args = parser.parse_args()
-    
-    build_3d_image(args.image_dir, args.res_dir,args.densify, args.bundle_adjustment)
-    
-    
+
+    image_dir = args.image_dir
+    res_dir = args.res_dir
+    densify = args.densify
+
+    # Executar pipeline    
+    build_3d_image(image_dir, res_dir, densify)
+
+    # Visualizar nuvem de pontos
+    point_cloud_file = os.path.join(res_dir, "dense.ply" if densify else "sparse.ply")
+    visualization.visualize_point_cloud(point_cloud_file)
