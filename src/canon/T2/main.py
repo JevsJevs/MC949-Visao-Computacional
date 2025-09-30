@@ -271,7 +271,7 @@ if __name__ == "__main__":
     build_3d_image(image_dir, res_dir, densify)
 
     # Visualizar nuvem de pontos
-    # point_cloud_file = os.path.join(res_dir, "dense.ply" if densify else "sparse.ply")
-    # visualization.visualize_point_cloud(point_cloud_file)
+    point_cloud_file = os.path.join(res_dir, "dense.ply" if densify else f"{OUTNAME}.ply")
+    visualization.visualize_point_cloud(point_cloud_file)
 
 #python src/canon/T2/main.py --image_dir data/T2/interim/GustavIIAdolf --res_dir data/T2/interim/GustavIIAdolf/mainRun --densify False
