@@ -1,93 +1,69 @@
 # MC949-Visao-Computacional
 
-Template de projeto inspirado: Cookiecutter-data-science
-https://cookiecutter-data-science.drivendata.org/#directory-structure
+Repositório com os projetos da disciplina MC949/MO4446 - Visão Computacional.
 
-Divisão de pastas:
-- data
-    - interim: versoes dos dados originais, criar em subpastas nomeadas pelo padrão (stepDoTrab-iniciais-descricao) 
-    - processed: versões final dos dados usados no canon do projeto (src)
-    - raw: Dataset original em sua forma inalterada
-- docs: documentação
-    - subpastas referentes aos subescopos do projeto
-- models: armazena modelos que serão criados
-- notebooks: Playground de cada um para fins de pesquisa
-    - criar conforme padrão de nomenclatura: stepDoTrab-initials-descricao
-- src: Local do canone do projeto, ao final de pesquisa o código definitivo será posto aqui.
+## Estrutura de Diretórios
 
+Template de projeto inspirado no [Cookiecutter-data-science](https://cookiecutter-data-science.drivendata.org/#directory-structure).
 
-## Padrão de commit [Conventional commits]
-https://www.conventionalcommits.org/en/v1.0.0/#summary 
+- `data/`
+    - `raw/`: Dataset original em sua forma inalterada
+    - `interim/`: Versões pré-processadas dos dados originais
+    - `results/`: Resultados finais do projeto
+- `docs/`: Documentação do projeto
+- `models/`: Modelos que serão criados
+- `notebooks/`: Notebooks de playground para fins de pesquisa
+- `src/`: Código definitivo do projeto
 
-### Instruções
-- Usar os prefixos de type referentes ao tipo do commit (fig abaixo)
-- Escopo    -> indicar o ID da task para rastreio no projeto github -> #1
-- Mensagem  -> descrição da mudança 
+Como o repositório armazena o código referente a 4 projetos distintos, cada um desses diretórios foi dividido em T1, T2, T3 e T4. Com isso, a estrutura do repositório é a seguinte:
 
-Ex:  
-**feat(#1): Tratamento incial dos dados**  
-**docs(#2): explicação do algoritmo X**  
-**refactor(#10): melhorando implementação do alg. Y**
-
-![conventionalCommits](./docs/Project-Organization/conventionalCommit.png)
-
-## Execução de código T1
-Primeiro cria-se o ambiente virtual python. Com o terminal aberto na pasta raiz do projeto, execute
-
-```bash
-python -m venv venv
-```
-Agora ativamos o ambiente virtual
-
-Linux/macOS:
-```bash
-source venv/bin/activate
-```
-Windows:
-```bash
-.\venv\Scripts\Activate
-```
-
-E instalamos as bibliotecas 
-```bash
-pip install -r requirements.txt
-```
-
-## Execução de código T2
-Primeiro cria-se o ambiente virtual python. Com o terminal aberto na pasta raiz do projeto, execute
-
-Windows:
-```bash
-py -3.10 -m venv venv310 
+```txt
+├── data
+│   ├── T1
+│   |   ├── interim
+│   |   ├── raw
+│   |   └── results
+│   ├── T2
+│   |   ├── interim
+│   |   ├── raw
+│   |   └── results
+│   ├── T3
+│   |   ├── interim
+│   |   ├── raw
+│   |   └── results
+│   └── T4
+|       ├── interim
+│       ├── raw
+│       └── results
+├── docs
+├── notebooks
+│   ├── T1
+│   ├── T2
+│   ├── T3
+│   └── T4
+├── requirements.txt
+├── run.sh
+└── src
+    ├── canon
+    │   ├── T1
+    │   ├── T2
+    │   ├── config.py
+    │   ├── download_data.py
+    │   └── utils
+    └── pyproject.toml
 ```
 
-Linux/macOS:
-```bash
-source venv310/bin/activate
-```
+## Execução do Projeto T2
 
-Windows:
-```bash
-.\venv310\Scripts\Activate
-```
+Para executar o projeto, foi disponibilizado um script `run.sh` na raiz do repositório. A execução do script realiza as seguintes etapas:
 
-E instalamos as bibliotecas 
-```bash
-pip install -r requirements.txt
-```
+1. Criação do ambiente virtual e instalação das bibliotecas necessárias
+2. Download dos dados
+3. Execução da pipeline do projeto
 
-### Type linting
-Para ativar a execução do type linting (verificação de tipos) no código fonte, rode o seguinte comando ao abrir o venv:
-```bash
-pre-commit install
-```
-Agora antes de cada commit, o mypy rodará.
-
-É possível ignorar a verificação com git commit --no-verify , mas não é o ideal.
-
-## Download dos dados
-Com o venv ativado, realize o download dos dados rodando o script
+Os seguintes comandos devem ser executados na raiz do repositório:
 
 ```bash
-python src/canon/download_data.py
+chmod +x run.sh
+./run.sh
 ```
