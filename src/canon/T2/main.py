@@ -16,10 +16,10 @@ from canon.T2.process import feature_extraction, epipolar_geometry, reconstructi
 from canon.T2.plotting import visualization
 
 DATASET = "GustavII"
-DESCRIPTOR = 'akaze'
+DESCRIPTOR = 'sift'
 LOWE = 0.7
-RANSAC_TH = .95
-RANSAC_PROB = 0.99
+RANSAC_TH = 5
+RANSAC_PROB = 0.80
 
 OUTNAME = f"{DATASET}_{DESCRIPTOR}_rsacProb{RANSAC_PROB}_{RANSAC_TH}_lowe_{LOWE}"
 
@@ -37,6 +37,8 @@ def findFeaturesFilter(img1, img2):
 def build_3d_image(img_dir, res_dir, densify = False):
     # Input Camera Intrinsic Parameters
     K = epipolar_geometry.get_intrinsic_matrix()
+    # img_list = sorted(os.listdir(img_dir))
+    # K = epipolar_geometry.estimate_epipolar_matrix(cv2.imread(f'{img_dir}/1.jpg'))
 
     downscale = 2
     K[0,0] = K[0,0] / float(downscale)
@@ -110,6 +112,7 @@ def build_3d_image(img_dir, res_dir, densify = False):
     #camera_orientation(path, mesh, R_t_0, 0)
     #camera_orientation(path, mesh, R_t_1, 1)
 
+    reprojError = []
     for i in tqdm(range(tot_imgs)):
         # Acquire new image to be added to the pipeline and acquire matches with image pair
         img2 = image_utils.img_downscale(cv2.imread(img_dir + '/' + images[i + 2]), downscale)
@@ -145,6 +148,7 @@ def build_3d_image(img_dir, res_dir, densify = False):
         
         temp1, temp2, points_3d = epipolar_geometry.Triangulation(P2, Pnew, temp1, temp2, K, repeat = False)
         error, points_3d, _ = epipolar_geometry.ReprojectionError(points_3d, temp2, Rtnew, K, homogenity = 1)
+        reprojError.append(error)
         print("Reprojection Error: ", error)
         # We are storing the pose for each image. This will be very useful during multiview stereo as this should be known
         posearr = np.hstack((posearr, Pnew.ravel()))
@@ -172,6 +176,9 @@ def build_3d_image(img_dir, res_dir, densify = False):
             break
 
     #plt.show()
+    plt.title(f"{DESCRIPTOR} - RANSAC TH {RANSAC_TH}: Erro Reprojeção")
+    plt.savefig(f"{OUTNAME}.png", dpi=300, bbox_inches="tight")
+
     cv2.destroyAllWindows()
 
     # Finally, the obtained points cloud is registered and saved using open3d. It is saved in .ply form, which can be viewed using meshlab
@@ -195,10 +202,13 @@ def build_3d_image(img_dir, res_dir, densify = False):
           f"dz={bbox_stats['dz']:.2f}")
     print(f"Density (points/m²): {bbox_stats['density']:.2f}")
 
+    reprojError = np.array(reprojError)
     # Compute reprojection error of last registration
     reproj_stats = metrics.compute_reprojection_errors(points_3d, com_pts2, Rtnew, K, homogenity=0)
     print(f"Reprojection error (mean): {reproj_stats['mean_error']:.2f}")
+    print(f"Reprojection error OK(mean): {reprojError.mean():.2f}")
     print(f"Reprojection error (median): {reproj_stats['median_error']:.2f}")
+    print(f"Reprojection error OK (median): {np.median(reprojError):.2f}")
 
     with open(f"{res_dir}/{OUTNAME}.txt", "w") as f:
         f.write(f"Sparse points: {num_sparse_points}\n")
@@ -208,10 +218,10 @@ def build_3d_image(img_dir, res_dir, densify = False):
           f"dx={bbox_stats['dx']:.2f}, "
           f"dy={bbox_stats['dy']:.2f}, "
           f"dz={bbox_stats['dz']:.2f}\n")
-        f.write(f"Density (points/m²): {bbox_stats['density']:.2f}\n\n")
+        f.write(f"Density (points/m²): {bbox_stats['density']}\n\n")
         
-        f.write(f"Reprojection error (mean): {reproj_stats['mean_error']:.2f}\n")
-        f.write(f"Reprojection error (median): {reproj_stats['median_error']:.2f}")
+        f.write(f"Reprojection error (mean): {reprojError.mean():.2f}\n")
+        f.write(f"Reprojection error (median): {np.median(reprojError):.2f}")
 
 
 
