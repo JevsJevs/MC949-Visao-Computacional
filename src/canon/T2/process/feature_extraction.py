@@ -202,7 +202,7 @@ def extract_akaze_for_3d(images: Dict[str, np.ndarray], **kwargs) -> Dict[str, D
     return extract_features_with_metadata(images, "AKAZE", **default_params)
 
 
-def find_features(img0: np.ndarray, img1: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+def find_features(img0: np.ndarray, img1: np.ndarray, lowe: float = 0.7) -> Tuple[np.ndarray, np.ndarray]:
     """
     Find feature correspondences between two images using SIFT + BFMatcher.
 
@@ -226,7 +226,7 @@ def find_features(img0: np.ndarray, img1: np.ndarray) -> Tuple[np.ndarray, np.nd
 
     good = []
     for m, n in matches:
-        if m.distance < 0.70 * n.distance:
+        if m.distance < lowe * n.distance:
             good.append(m)
 
     pts0 = np.float32([kp0[m.queryIdx].pt for m in good])
@@ -234,6 +234,70 @@ def find_features(img0: np.ndarray, img1: np.ndarray) -> Tuple[np.ndarray, np.nd
 
     return pts0, pts1
 
+def find_features_orb(img0: np.ndarray, img1: np.ndarray, lowe: float = 0.7) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Find feature correspondences between two images using SIFT + BFMatcher.
+
+    Args:
+        img0: First image (BGR or grayscale).
+        img1: Second image (BGR or grayscale).
+
+    Returns:
+        pts0: Nx2 array of matched keypoints from img0.
+        pts1: Nx2 array of matched keypoints from img1.
+    """
+    img0gray = cv2.cvtColor(img0, cv2.COLOR_BGR2GRAY)
+    img1gray = cv2.cvtColor(img1, cv2.COLOR_BGR2GRAY)
+
+    orb = cv2.ORB_create(nfeatures=3000)
+    kp0, des0 = orb.detectAndCompute(img0gray, None)
+    kp1, des1 = orb.detectAndCompute(img1gray, None)
+
+    bf = cv2.BFMatcher()
+    matches = bf.knnMatch(des0, des1, k=2)
+
+    good = []
+    for m, n in matches:
+        if m.distance < lowe * n.distance:
+            good.append(m)
+
+    pts0 = np.float32([kp0[m.queryIdx].pt for m in good])
+    pts1 = np.float32([kp1[m.trainIdx].pt for m in good])
+
+    return pts0, pts1
+
+
+def find_features_akaze(img0: np.ndarray, img1: np.ndarray, lowe: float = 0.7) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Find feature correspondences between two images using SIFT + BFMatcher.
+
+    Args:
+        img0: First image (BGR or grayscale).
+        img1: Second image (BGR or grayscale).
+
+    Returns:
+        pts0: Nx2 array of matched keypoints from img0.
+        pts1: Nx2 array of matched keypoints from img1.
+    """
+    img0gray = cv2.cvtColor(img0, cv2.COLOR_BGR2GRAY)
+    img1gray = cv2.cvtColor(img1, cv2.COLOR_BGR2GRAY)
+
+    akaze = cv2.AKAZE_create()
+    kp0, des0 = akaze.detectAndCompute(img0gray, None)
+    kp1, des1 = akaze.detectAndCompute(img1gray, None)
+
+    bf = cv2.BFMatcher()
+    matches = bf.knnMatch(des0, des1, k=2)
+
+    good = []
+    for m, n in matches:
+        if m.distance < lowe * n.distance:
+            good.append(m)
+
+    pts0 = np.float32([kp0[m.queryIdx].pt for m in good])
+    pts1 = np.float32([kp1[m.trainIdx].pt for m in good])
+
+    return pts0, pts1
 
 def common_points(
     pts1: np.ndarray,

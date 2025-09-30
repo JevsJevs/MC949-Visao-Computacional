@@ -268,7 +268,7 @@ class Triangulator:
         """
         self.camera_matrix = camera_matrix
     
-    def triangulate_points(self,
+    def triangulate_points_new(self,
                           pts1: np.ndarray,
                           pts2: np.ndarray,
                           P1: np.ndarray,
@@ -300,6 +300,39 @@ class Triangulator:
 
         return points1, points2, cloud
     
+    def triangulate_points(self,
+                          pts1: np.ndarray,
+                          pts2: np.ndarray,
+                          R1: np.ndarray,
+                          t1: np.ndarray,
+                          R2: np.ndarray,
+                          t2: np.ndarray) -> np.ndarray:
+        """
+        Triangulate 3D points from two views.
+        
+        Args:
+            pts1: Points in first image (Nx1x2)
+            pts2: Points in second image (Nx1x2)
+            R1: Rotation matrix for first camera
+            t1: Translation vector for first camera
+            R2: Rotation matrix for second camera
+            t2: Translation vector for second camera
+        
+        Returns:
+            3D points in homogeneous coordinates (4xN)
+        """
+        P1 = self.camera_matrix @ np.hstack([R1, t1.reshape(-1, 1)])
+        P2 = self.camera_matrix @ np.hstack([R2, t2.reshape(-1, 1)])
+        
+        # Reshape points for triangulation
+        pts1_norm = pts1.reshape(-1, 2).T
+        pts2_norm = pts2.reshape(-1, 2).T
+        
+        # Triangulate
+        points_4d = cv2.triangulatePoints(P1, P2, pts1_norm, pts2_norm)
+        
+        return points_4d
+
     def convert_to_3d(self, points_4d: np.ndarray) -> np.ndarray:
         """
         Convert homogeneous 4D points to 3D.
@@ -444,6 +477,8 @@ def PnP(
         p = p[inliers[:, 0]]
         X = X[inliers[:, 0]]
         p_0 = p_0[inliers[:, 0]]
+    else:
+        print("This is an issue")
 
     return R, t, p, X, p_0
 
@@ -526,8 +561,14 @@ def Triangulation(
 
 
 def get_intrinsic_matrix() -> np.ndarray:
+    # return np.array([
+    #     [2393.952166119461, -3.410605131648481e-13, 932.3821770809047],
+    #     [0, 2398.118540286656, 628.2649953288065],
+    #     [0, 0, 1]
+    # ])
+
     return np.array([
-        [2393.952166119461, -3.410605131648481e-13, 932.3821770809047],
-        [0, 2398.118540286656, 628.2649953288065],
-        [0, 0, 1]
+        [1.92e+03, 0.00e+00, 5.40e+02],
+        [0.00e+00, 1.92e+03, 9.60e+02],
+        [0.00e+00, 0.00e+00, 1.00e+00]
     ])
