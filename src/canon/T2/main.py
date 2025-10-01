@@ -260,18 +260,53 @@ if __name__ == "__main__":
         required=True,
         help="Produzir densificação (True/False)"
     )
+    parser.add_argument(
+        "--descriptor",
+        type=str,
+        choices=["sift", "orb", "akaze"],
+        default="sift",
+        help="Descritor de features a ser usado (sift, orb, akaze). Default: sift"
+    )
+    parser.add_argument(
+        "--lowe",
+        type=float,
+        default=0.7,
+        help="Parâmetro do teste de razão de Lowe (default: 0.7)"
+    )
+    parser.add_argument(
+        "--ransac_th",
+        type=float,
+        default=5.0,
+        help="Limiar de RANSAC em pixels (default: 5)"
+    )
+    parser.add_argument(
+        "--ransac_prob",
+        type=float,
+        default=0.80,
+        help="Probabilidade de RANSAC (default: 0.80)"
+    )
     
     args = parser.parse_args()
 
     image_dir = args.image_dir
     res_dir = args.res_dir
     densify = args.densify
+    descriptor = args.descriptor
+    DESCRIPTOR = args.descriptor
+    LOWE = args.lowe
+    RANSAC_TH = args.ransac_th
+    RANSAC_PROB = args.ransac_prob
+    DATASET = Path(image_dir).name
+    
+    OUTNAME = f"{DATASET}_{DESCRIPTOR}_rsacProb{RANSAC_PROB}_{RANSAC_TH}_lowe_{LOWE}"
 
     # Executar pipeline    
     build_3d_image(image_dir, res_dir, densify)
+    
+    os.makedirs(res_dir, exist_ok=True)
 
     # Visualizar nuvem de pontos
-    point_cloud_file = os.path.join(res_dir, "dense.ply" if densify else f"{OUTNAME}.ply")
+    point_cloud_file = os.path.join(res_dir, f"{OUTNAME}_dense.ply" if densify else f"{OUTNAME}.ply")
     visualization.visualize_point_cloud(point_cloud_file)
 
 #python src/canon/T2/main.py --image_dir data/T2/interim/GustavIIAdolf --res_dir data/T2/interim/GustavIIAdolf/mainRun --densify False
