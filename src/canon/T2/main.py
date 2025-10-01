@@ -15,13 +15,6 @@ from canon.utils import image_utils
 from canon.T2.process import feature_extraction, epipolar_geometry, reconstruction_3d
 from canon.T2.plotting import visualization
 
-DATASET = "GustavII"
-DESCRIPTOR = 'sift'
-LOWE = 0.7
-RANSAC_TH = 5
-RANSAC_PROB = 0.80
-
-OUTNAME = f"{DATASET}_{DESCRIPTOR}_rsacProb{RANSAC_PROB}_{RANSAC_TH}_lowe_{LOWE}"
 
 def findFeaturesFilter(img1, img2):
     if(DESCRIPTOR == 'sift'):
@@ -177,7 +170,7 @@ def build_3d_image(img_dir, res_dir, densify = False):
 
     #plt.show()
     plt.title(f"{DESCRIPTOR} - RANSAC TH {RANSAC_TH}: Erro Reprojeção")
-    plt.savefig(f"{OUTNAME}.png", dpi=300, bbox_inches="tight")
+    plt.savefig(f"{res_dir}/{OUTNAME}.png", dpi=300, bbox_inches="tight")
 
     cv2.destroyAllWindows()
 
@@ -264,7 +257,7 @@ if __name__ == "__main__":
         "--descriptor",
         type=str,
         choices=["sift", "orb", "akaze"],
-        default="sift",
+        default="orb",
         help="Descritor de features a ser usado (sift, orb, akaze). Default: sift"
     )
     parser.add_argument(
@@ -291,7 +284,6 @@ if __name__ == "__main__":
     image_dir = args.image_dir
     res_dir = args.res_dir
     densify = args.densify
-    descriptor = args.descriptor
     DESCRIPTOR = args.descriptor
     LOWE = args.lowe
     RANSAC_TH = args.ransac_th
@@ -306,7 +298,7 @@ if __name__ == "__main__":
     os.makedirs(res_dir, exist_ok=True)
 
     # Visualizar nuvem de pontos
-    point_cloud_file = os.path.join(res_dir, f"{OUTNAME}_dense.ply" if densify else f"{OUTNAME}.ply")
+    point_cloud_file = os.path.join(f"{res_dir}/{OUTNAME}.ply")
     visualization.visualize_point_cloud(point_cloud_file)
 
 #python src/canon/T2/main.py --image_dir data/T2/interim/GustavIIAdolf --res_dir data/T2/interim/GustavIIAdolf/mainRun --densify False

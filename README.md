@@ -53,7 +53,7 @@ Como o repositório armazena o código referente a 4 projetos distintos, cada um
     └── pyproject.toml
 ```
 
-## Execução do Projeto T2
+## Execução do Projeto
 
 Para executar o projeto, foi disponibilizado um script `run.sh` na raiz do repositório. A execução do script realiza as seguintes etapas:
 
@@ -65,5 +65,21 @@ Os seguintes comandos devem ser executados na raiz do repositório:
 
 ```bash
 chmod +x run.sh
-./run.sh
+./run.sh --project <TX> --dataset <DATASET_NAME>
 ```
+
+Onde `TX` representa o projeto a ser executado ("T1", "T2", "T3" ou "T4") e `DATASET_NAME` representa o conjunto de dados a ser utilizado.
+
+Para o projeto T2, estão disponíveis os seguintes conjuntos de dados:
+
+- `barco_miniatura`
+- `castle-P19`
+- `castle-P30`
+- `entry-P10`
+- `estatua`
+- `fountain-P11`
+- `galinha_honduras`
+- `GustavIIAdolf`
+- `Herz-Jesus-P8`
+- `menino_porteira`
+- `msc_grandiosa_miniatura`
