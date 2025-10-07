@@ -1,2 +1,14 @@
 opencv-python
 notebook
+ipykernel
+matplotlib
+numpy
+mypy
+pre-commit
+scikit-learn
+networkx
+tqdm
+open3d-python
+open3d
+kagglehub
+-e ./src
