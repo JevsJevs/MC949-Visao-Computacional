@@ -11,7 +11,7 @@ Template de projeto inspirado no [Cookiecutter-data-science](https://cookiecutte
     - `interim/`: Versões pré-processadas dos dados originais
     - `results/`: Resultados finais do projeto
 - `docs/`: Documentação do projeto
-- `models/`: Modelos que serão criados
+- `models/`: Modelos pré-treinados e checkpoints
 - `notebooks/`: Notebooks de playground para fins de pesquisa
 - `src/`: Código definitivo do projeto
 
@@ -32,10 +32,11 @@ Como o repositório armazena o código referente a 4 projetos distintos, cada um
 │   |   ├── raw
 │   |   └── results
 │   └── T4
-|       ├── interim
-│       ├── raw
+|       ├── imagens
+│       ├── mascaras
 │       └── results
 ├── docs
+├── models
 ├── notebooks
 │   ├── T1
 │   ├── T2
@@ -47,23 +48,34 @@ Como o repositório armazena o código referente a 4 projetos distintos, cada um
     ├── canon
     │   ├── T1
     │   ├── T2
+    │   ├── T4
+    │   │   ├── config
+    │   │   ├── process (modelos de inpainting)
+    │   │   └── utils.py
     │   ├── config.py
     │   ├── download_data.py
     │   └── utils
     └── pyproject.toml
 ```
 
-## Execução do Projeto T2
+## Execução dos Projetos
 
-Para executar o projeto, foi disponibilizado um script `run.sh` na raiz do repositório. A execução do script realiza as seguintes etapas:
+Para executar os projetos, foi disponibilizado um script `run.sh` na raiz do repositório. A execução do script realiza as seguintes etapas:
 
 1. Criação do ambiente virtual e instalação das bibliotecas necessárias
-2. Download dos dados
-3. Execução da pipeline do projeto
+2. Download dos dados do projeto especificado
+3. Execução da pipeline (no caso do T2)
 
-Os seguintes comandos devem ser executados na raiz do repositório:
+### Como Usar
+
+Edite a variável `PROJECT` no arquivo `run.sh` (linha 5) para o projeto desejado (`T1`, `T2` ou `T4`), e execute os seguintes comandos na raiz do repositório:
 
 ```bash
 chmod +x run.sh
 ./run.sh
 ```
+
+**Exemplos:**
+- Para T1: `PROJECT="T1"` - Baixa os dados e prepara o ambiente
+- Para T2: `PROJECT="T2"` - Baixa os dados e executa automaticamente a pipeline de reconstrução 3D  
+- Para T4: `PROJECT="T4"` - Baixa imagens e máscaras do Kaggle
