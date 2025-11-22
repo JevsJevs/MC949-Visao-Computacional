@@ -1,5 +1,18 @@
 import logging
 import sys
+from pathlib import Path
+
+try:
+# Works in scripts
+    current_file = Path(__file__).resolve()
+except NameError:
+    # Fallback for interactive sessions like Jupyter
+    current_file = Path(sys.argv[0]).resolve() if sys.argv[0] else Path.cwd()
+
+current_dir = current_file.parent
+
+BASE_DATA_PATH = current_dir.parent.parent / "data"
+
 
 def setup_logger(name: str = "ReconstructionPipeline", level=logging.INFO):
     """Configura logger com saída no console."""

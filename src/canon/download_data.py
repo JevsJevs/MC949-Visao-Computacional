@@ -42,6 +42,7 @@ if __name__ == "__main__":
     datasets = {
         "T1": "eliassantosmartins/mc949-t1",
         "T2": "eliassantosmartins/mc929-t2",
+        "T4": "eliassantosmartins/mc949-t4"
     }
 
     # Configurar argparse para receber argumentos
