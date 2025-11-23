@@ -3,6 +3,10 @@ data/
 .venv
 venv/
 venv310/
+resshift_env/
+
+# External dependencies (cloned during setup)
+external/ResShift/
 
 # Ignore Python cache files
 __pycache__/
@@ -13,8 +17,10 @@ __pycache__/
 *.egg-info/
 *.egg
 
-# Ignore tests
-src/canon/T4/process/test_models.py
+# Ignore Colab notebooks
+notebooks/T4/ResShift_Colab.ipynb
+notebooks/T4/Kandinsky_Colab.ipynb
+notebooks/T4/ControlNet_Colab.ipynb
 
 # Ignore large feature files (>100MB)
 **/sift_features.pkl

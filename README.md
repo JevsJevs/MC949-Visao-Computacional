@@ -79,3 +79,69 @@ chmod +x run.sh
 - Para T1: `PROJECT="T1"` - Baixa os dados e prepara o ambiente
 - Para T2: `PROJECT="T2"` - Baixa os dados e executa automaticamente a pipeline de reconstrução 3D  
 - Para T4: `PROJECT="T4"` - Baixa imagens e máscaras do Kaggle
+
+## Projeto T4: Modelos de Difusão para Restauração de Imagens
+
+O projeto T4 implementa modelos de difusão para tarefas de restauração e expansão de imagens (inpainting).
+
+### Modelos Implementados
+
+**Modelos Principais (Core):**
+- Stable Diffusion Inpainting
+- Paint-by-Example
+- Kandinsky 2.2 Inpainting
+
+**Modelos Opcionais:**
+- ResShift (requer instalação adicional)
+
+### Testando os Modelos
+
+```bash
+# Teste rápido (recomendado)
+python src/canon/T4/process/test_models.py --quick
+
+# Teste apenas modelos principais
+python src/canon/T4/process/test_models.py --core-only
+
+# Teste completo com GPU
+python src/canon/T4/process/test_models.py cuda
+```
+
+### Configurando ResShift (Opcional)
+
+O ResShift requer um ambiente virtual isolado devido a incompatibilidade de versão do PyTorch.
+
+```bash
+# Instalação automática (recomendado)
+bash setup_resshift_venv.sh
+
+# Ativar o ambiente quando necessário
+source activate_resshift.sh
+
+# Testar
+python src/canon/T4/process/test_one_model.py resshift
+
+# Desativar ambiente
+deactivate
+```
+
+### Uso Básico
+
+```python
+from canon.T4 import get_model
+from PIL import Image
+
+image = Image.open("data/T4/imagens/antiga_1.jpg")
+mask = Image.open("data/T4/mascaras/antiga_1_mask_1.png")
+
+model = get_model("stable_diffusion", device="cuda")
+result = model.inpaint(image, mask)
+result["image"].save("data/T4/results/resultado.png")
+```
+
+### Documentação Completa
+
+- `docs/T4_Models_Documentation.md` - Documentação técnica
+- `docs/T4_Integration_Guide.md` - Guia de integração
+- `docs/T4_Testing_Guide.md` - Guia de testes
+- `docs/T4_Implementation_Status.md` - Status da implementação

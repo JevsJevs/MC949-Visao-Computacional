@@ -51,32 +51,7 @@ model = get_model("stable_diffusion",
 - Suporta prompts textuais
 - Tempo médio: ~8-10s por imagem (GPU)
 
-### 2. ControlNet Inpainting
-
-**Classe:** `ControlNetInpainting`  
-**Model IDs:** 
-- ControlNet: `lllyasviel/control_v11p_sd15_inpaint`
-- Base: `runwayml/stable-diffusion-v1-5`
-
-**Uso:** Controle estrutural fino, preserva bordas
-
-**Parâmetros configuráveis:**
-```python
-model = get_model("controlnet",
-    device="cuda",
-    num_inference_steps=50,
-    guidance_scale=7.5,
-    controlnet_conditioning_scale=1.0  # Padrão
-)
-```
-
-**Características:**
-- Usa máscara como guia estrutural
-- Melhor preservação de bordas
-- Mais lento que SD padrão
-- Tempo médio: ~12-15s por imagem (GPU)
-
-### 3. Paint-by-Example
+### 2. Paint-by-Example
 
 **Classe:** `PaintByExample`  
 **Model ID:** `Fantasy-Studio/Paint-by-Example`  
@@ -100,7 +75,7 @@ result = model.inpaint(image, mask, example_image=reference_img)
 - Útil para restauração com contexto
 - Tempo médio: ~9-11s por imagem (GPU)
 
-### 4. Kandinsky 2.2 Inpainting
+### 3. Kandinsky 2.2 Inpainting
 
 **Classe:** `KandinskyInpainting`  
 **Model IDs:**
@@ -124,7 +99,7 @@ model = get_model("kandinsky",
 - Diferentes estilos de geração
 - Tempo médio: ~10-13s por imagem (GPU)
 
-### 5. ResShift
+### 4. ResShift
 
 **Classe:** `ResShiftInpainting`  
 **Repository:** `zsyOAOA/ResShift`  

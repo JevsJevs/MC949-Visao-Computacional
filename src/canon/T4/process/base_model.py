@@ -49,14 +49,14 @@ class BaseInpaintingModel(ABC):
     def postprocess(self, result: Image.Image) -> Image.Image:
         return result
 
-    def inpaint(self, image: Union[Image.Image, np.ndarray], mask: Union[Image.Image, np.ndarray]) -> Dict[str, Any]:
+    def inpaint(self, image: Union[Image.Image, np.ndarray], mask: Union[Image.Image, np.ndarray], **kwargs) -> Dict[str, Any]:
         if not self.is_loaded:
             self.load_model()
         
         image_pil, mask_pil = self.preprocess(image, mask)
         
         start_time = time.time()
-        result = self._inpaint_impl(image_pil, mask_pil)
+        result = self._inpaint_impl(image_pil, mask_pil, **kwargs)
         inference_time = time.time() - start_time
         
         result = self.postprocess(result)

@@ -33,9 +33,21 @@ class StableDiffusionInpainting(BaseInpaintingModel):
         self.model = self.model.to(self.device)
         self.is_loaded = True
 
-    def _inpaint_impl(self, image: Image.Image, mask: Image.Image) -> Image.Image:
+    def _inpaint_impl(self, image: Image.Image, mask: Image.Image, **kwargs) -> Image.Image:
+        # Usar prompt fornecido ou vazio para reconstrução natural
+        prompt = kwargs.get("prompt", "")
+        
+        # Garantir que dimensões sejam divisíveis por 8
+        w, h = image.size
+        new_w = (w // 8) * 8
+        new_h = (h // 8) * 8
+        
+        if (w, h) != (new_w, new_h):
+            image = image.resize((new_w, new_h), Image.Resampling.LANCZOS)
+            mask = mask.resize((new_w, new_h), Image.Resampling.NEAREST)
+        
         result = self.model(
-            prompt="",
+            prompt=prompt,
             image=image,
             mask_image=mask,
             num_inference_steps=self.num_inference_steps,

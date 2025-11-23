@@ -42,9 +42,26 @@ class KandinskyInpainting(BaseInpaintingModel):
         self.model = self.model.to(self.device)
         self.is_loaded = True
 
-    def _inpaint_impl(self, image: Image.Image, mask: Image.Image) -> Image.Image:
-        prompt = ""
-        negative_prompt = ""
+    def _inpaint_impl(self, image: Image.Image, mask: Image.Image, **kwargs) -> Image.Image:
+        # Prompt genérico - modelo usa contexto da imagem para completar adequadamente
+        # Funciona para qualquer tipo de conteúdo (retratos, paisagens, satélite, etc)
+        prompt = kwargs.get("prompt", "high quality photo, detailed, photorealistic, natural lighting, coherent, consistent style")
+        negative_prompt = kwargs.get("negative_prompt", "low quality, blurry, distorted, artifacts, inconsistent, unrealistic, watermark, text")
+        
+        # Kandinsky requer múltiplos de 64 (não 8!)
+        w, h = image.size
+        new_w = (w // 64) * 64
+        new_h = (h // 64) * 64
+        
+        # Garantir tamanho mínimo de 512
+        if new_w < 512:
+            new_w = 512
+        if new_h < 512:
+            new_h = 512
+        
+        if (w, h) != (new_w, new_h):
+            image = image.resize((new_w, new_h), Image.Resampling.LANCZOS)
+            mask = mask.resize((new_w, new_h), Image.Resampling.NEAREST)
         
         image_embeds, negative_image_embeds = self.prior(
             prompt=prompt,
