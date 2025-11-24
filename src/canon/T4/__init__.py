@@ -1,7 +1,6 @@
 from .process import (
     BaseInpaintingModel,
     StableDiffusionInpainting,
-    ControlNetInpainting,
     PaintByExample,
     KandinskyInpainting,
     ResShiftInpainting,
@@ -16,7 +15,6 @@ from .process import (
 __all__ = [
     "BaseInpaintingModel",
     "StableDiffusionInpainting",
-    "ControlNetInpainting",
     "PaintByExample",
     "KandinskyInpainting",
     "ResShiftInpainting",

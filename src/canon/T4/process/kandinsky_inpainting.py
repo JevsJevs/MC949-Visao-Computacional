@@ -43,10 +43,51 @@ class KandinskyInpainting(BaseInpaintingModel):
         self.is_loaded = True
 
     def _inpaint_impl(self, image: Image.Image, mask: Image.Image, **kwargs) -> Image.Image:
-        # Prompt genérico - modelo usa contexto da imagem para completar adequadamente
-        # Funciona para qualquer tipo de conteúdo (retratos, paisagens, satélite, etc)
-        prompt = kwargs.get("prompt", "high quality photo, detailed, photorealistic, natural lighting, coherent, consistent style")
-        negative_prompt = kwargs.get("negative_prompt", "low quality, blurry, distorted, artifacts, inconsistent, unrealistic, watermark, text")
+        # Detecção automática do tipo de imagem baseado no nome do arquivo (se fornecido)
+        image_path = kwargs.get("image_path", "").lower()
+        
+        # Detectar tipo e definir prompt apropriado
+        if 'antiga' in image_path or 'vintage' in image_path:
+            default_prompt = (
+                "vintage photograph, old photo restoration, "
+                "natural skin texture, facial features, period clothing, "
+                "faded colors, nostalgic atmosphere, authentic vintage look, "
+                "seamless completion, matching the existing style"
+            )
+            default_guidance = 4.0
+        elif 'baixa_luz' in image_path or 'low_light' in image_path or 'noturna' in image_path:
+            default_prompt = (
+                "low light photography, dim lighting, natural shadows, "
+                "ambient darkness, subtle illumination, night scene, "
+                "photographic grain, authentic low light atmosphere, "
+                "preserve existing lighting conditions, natural continuation"
+            )
+            default_guidance = 3.5
+        elif 'satelite' in image_path or 'satellite' in image_path or 'aerial' in image_path:
+            default_prompt = (
+                "aerial satellite imagery, top-down view, earth from above, "
+                "natural terrain, vegetation patterns, land formations, "
+                "geographic features, consistent satellite perspective, "
+                "seamless terrain continuation, natural landscape"
+            )
+            default_guidance = 4.5
+        else:
+            # Genérico - para uso quando não há informação sobre o tipo
+            default_prompt = (
+                "natural continuation, seamless completion, "
+                "consistent style, coherent image, matching context"
+            )
+            default_guidance = 3.0
+        
+        prompt = kwargs.get("prompt", default_prompt)
+        guidance_scale = kwargs.get("guidance_scale", default_guidance)
+        
+        negative_prompt = kwargs.get(
+            "negative_prompt", 
+            "low quality, blurry, distorted, artifacts, inconsistent, "
+            "watermark, text, logo, signature, unrealistic, "
+            "obvious boundaries, visible seams, different style"
+        )
         
         # Kandinsky requer múltiplos de 64 (não 8!)
         w, h = image.size
@@ -74,7 +115,7 @@ class KandinskyInpainting(BaseInpaintingModel):
             image_embeds=image_embeds,
             negative_image_embeds=negative_image_embeds,
             num_inference_steps=self.num_inference_steps,
-            guidance_scale=self.guidance_scale
+            guidance_scale=guidance_scale  # Usa o guidance ajustado por tipo
         ).images[0]
         
         return result

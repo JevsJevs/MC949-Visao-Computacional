@@ -94,54 +94,29 @@ O projeto T4 implementa modelos de difusão para tarefas de restauração e expa
 **Modelos Opcionais:**
 - ResShift (requer instalação adicional)
 
-### Testando os Modelos
-
-```bash
-# Teste rápido (recomendado)
-python src/canon/T4/process/test_models.py --quick
-
-# Teste apenas modelos principais
-python src/canon/T4/process/test_models.py --core-only
-
-# Teste completo com GPU
-python src/canon/T4/process/test_models.py cuda
-```
 
 ### Configurando ResShift (Opcional)
 
-O ResShift requer um ambiente virtual isolado devido a incompatibilidade de versão do PyTorch.
+O ResShift requer um ambiente virtual isolado com **Python 3.10** devido a incompatibilidade de versão do PyTorch.
+
+**Por que Python 3.10?**
+- ResShift usa PyTorch 2.1.1
+- PyTorch 2.1.1 só é compatível com Python 3.10.x
+- Versões mais novas (3.11+) não são suportadas
 
 ```bash
+# Verificar se tem Python 3.10 instalado
+python3.10 --version
+
+# Se não tiver, instalar primeiro:
+# Ubuntu/Debian: sudo apt install python3.10 python3.10-venv
+
 # Instalação automática (recomendado)
 bash setup_resshift_venv.sh
 
 # Ativar o ambiente quando necessário
 source activate_resshift.sh
 
-# Testar
-python src/canon/T4/process/test_one_model.py resshift
-
 # Desativar ambiente
 deactivate
 ```
-
-### Uso Básico
-
-```python
-from canon.T4 import get_model
-from PIL import Image
-
-image = Image.open("data/T4/imagens/antiga_1.jpg")
-mask = Image.open("data/T4/mascaras/antiga_1_mask_1.png")
-
-model = get_model("stable_diffusion", device="cuda")
-result = model.inpaint(image, mask)
-result["image"].save("data/T4/results/resultado.png")
-```
-
-### Documentação Completa
-
-- `docs/T4_Models_Documentation.md` - Documentação técnica
-- `docs/T4_Integration_Guide.md` - Guia de integração
-- `docs/T4_Testing_Guide.md` - Guia de testes
-- `docs/T4_Implementation_Status.md` - Status da implementação
