@@ -12,6 +12,7 @@ except NameError:
 current_dir = current_file.parent
 
 BASE_DATA_PATH = current_dir.parent.parent / "data"
+BASE_MODEL_PATH = current_dir.parent.parent / "models"
 
 
 def setup_logger(name: str = "ReconstructionPipeline", level=logging.INFO):
