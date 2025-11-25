@@ -44,7 +44,7 @@ class KandinskyInpainting(BaseInpaintingModel):
 
     def _inpaint_impl(self, image: Image.Image, mask: Image.Image, **kwargs) -> Image.Image:
         # Detecção automática do tipo de imagem baseado no nome do arquivo (se fornecido)
-        image_path = kwargs.get("image_path", "").lower()
+        image_path = str(kwargs.get("image_path", "")).lower()
         
         # Detectar tipo e definir prompt apropriado
         if 'antiga' in image_path or 'vintage' in image_path:
@@ -104,6 +104,7 @@ class KandinskyInpainting(BaseInpaintingModel):
             image = image.resize((new_w, new_h), Image.Resampling.LANCZOS)
             mask = mask.resize((new_w, new_h), Image.Resampling.NEAREST)
         
+        print(f"\n{prompt=}\n")
         image_embeds, negative_image_embeds = self.prior(
             prompt=prompt,
             negative_prompt=negative_prompt

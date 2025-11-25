@@ -57,7 +57,7 @@ def batch_inpaint_single_image(
             try:
                 print(f"  Running {model_name}...")
                 model = get_model(model_name, device=device, **model_kwargs)
-                result = model.inpaint(image, mask)
+                result = model.inpaint(image, mask, image_path=image_path)
                 
                 prefix = f"{image_name}_{mask_name}"
                 save_results(
@@ -134,7 +134,7 @@ def compare_models_grid(
         try:
             print(f"Running {model_name}...")
             model = get_model(model_name, device=device, **model_kwargs)
-            result = model.inpaint(image, mask)
+            result = model.inpaint(image, mask, image_path=image_path)
             results[model_name] = result
             model.unload_model()
             print(f"  Time: {result['inference_time']:.2f}s")

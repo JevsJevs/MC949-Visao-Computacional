@@ -100,10 +100,6 @@ class ResShiftInpainting(BaseInpaintingModel):
             )
             
             self.is_loaded = True
-        except ImportError as e:
-            raise ImportError(
-                f"ResShift not found. Please run: bash setup_resshift_venv.sh"
-            ) from e
         except Exception as e:
             raise RuntimeError(f"Failed to load ResShift: {str(e)}") from e
 

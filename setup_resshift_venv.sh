@@ -125,11 +125,7 @@ fi
 
 # Instalar dependências do ResShift
 echo -e "\n${GREEN}7. Instalando dependências do ResShift...${NC}"
-pip install numpy==1.24.3  # Compatível com PyTorch 2.1.1 e scipy 1.9.3
-pip install scipy==1.9.3
-pip install opencv-python matplotlib Pillow
-pip install timm pandas scikit-learn scikit-image
-pip install lpips loguru omegaconf einops imageio albumentations
+pip install -r resshift-requirements.txt
 
 # Instalar xformers (pode falhar sem CUDA, mas não é crítico)
 echo -e "\n${GREEN}8. Tentando instalar xformers (opcional)...${NC}"
