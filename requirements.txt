@@ -18,5 +18,6 @@ torchvision==0.16.0
 scikit-image #Contem um dos comparadores
 torchmetrics
 realesrgan
+bsrgan
 
 -e ./src

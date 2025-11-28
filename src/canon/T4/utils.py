@@ -19,6 +19,14 @@ def load_image_and_masks(name: str):
 
     return image, masks
 
+def get_image_path(name: str):
+    base = BASE_DATA_PATH / "T4"
+    img_path = base / "imagens" / f"{name}.jpg"
+    
+    if not img_path.exists():
+        img_path = base / "imagens" / f"{name}.png"
+
+    return img_path
 
 def apply_mask(image, mask):
     # Invert mask so white (to remove) becomes 0, black (keep) becomes 255
