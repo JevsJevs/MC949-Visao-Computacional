@@ -47,14 +47,21 @@ class KandinskyInpainting(BaseInpaintingModel):
         image_path = str(kwargs.get("image_path", "")).lower()
         
         # Detectar tipo e definir prompt apropriado
-        if 'antiga' in image_path or 'vintage' in image_path:
+        if 'antiga' in image_path or 'vintage' in image_path or 'old' in image_path or 'restored' in image_path:
+            # Prompt otimizado para fotos antigas - foco em PRESERVAÇÃO FIEL
             default_prompt = (
-                "vintage photograph, old photo restoration, "
-                "natural skin texture, facial features, period clothing, "
-                "faded colors, nostalgic atmosphere, authentic vintage look, "
-                "seamless completion, matching the existing style"
+                "professional photo restoration, complete only the missing areas, "
+                "preserve existing facial features exactly as they are, "
+                "match the vintage sepia tone perfectly, "
+                "natural continuation of visible skin texture, "
+                "period-appropriate clothing style from visible context, "
+                "seamless repair maintaining original composition, "
+                "no added objects, no decorations, no flowers, "
+                "invisible restoration, faithful reproduction, "
+                "match grain and lighting of surrounding area"
             )
-            default_guidance = 4.0
+            default_guidance = 7.0  # Menor autonomia do modelo
+            default_steps = 75  # Mais steps para melhor qualidade
         elif 'baixa_luz' in image_path or 'low_light' in image_path or 'noturna' in image_path:
             default_prompt = (
                 "low light photography, dim lighting, natural shadows, "
@@ -63,6 +70,7 @@ class KandinskyInpainting(BaseInpaintingModel):
                 "preserve existing lighting conditions, natural continuation"
             )
             default_guidance = 3.5
+            default_steps = 50
         elif 'satelite' in image_path or 'satellite' in image_path or 'aerial' in image_path:
             default_prompt = (
                 "aerial satellite imagery, top-down view, earth from above, "
@@ -71,22 +79,29 @@ class KandinskyInpainting(BaseInpaintingModel):
                 "seamless terrain continuation, natural landscape"
             )
             default_guidance = 4.5
+            default_steps = 50
         else:
             # Genérico - para uso quando não há informação sobre o tipo
             default_prompt = (
                 "natural continuation, seamless completion, "
-                "consistent style, coherent image, matching context"
+                "consistent style, coherent image, matching context, "
+                "preserve composition, no added objects"
             )
-            default_guidance = 3.0
+            default_guidance = 4.0
+            default_steps = 50
         
         prompt = kwargs.get("prompt", default_prompt)
         guidance_scale = kwargs.get("guidance_scale", default_guidance)
+        num_inference_steps = kwargs.get("num_inference_steps", default_steps)
         
+        # Negative prompt mais agressivo para evitar adições indesejadas
         negative_prompt = kwargs.get(
             "negative_prompt", 
+            "added objects, extra items, flowers, decorations, jewelry, accessories, "
+            "creative additions, new elements, fictional content, "
             "low quality, blurry, distorted, artifacts, inconsistent, "
             "watermark, text, logo, signature, unrealistic, "
-            "obvious boundaries, visible seams, different style"
+            "obvious boundaries, visible seams, different style, different lighting"
         )
         
         # Kandinsky requer múltiplos de 64 (não 8!)
@@ -115,7 +130,7 @@ class KandinskyInpainting(BaseInpaintingModel):
             mask_image=mask,
             image_embeds=image_embeds,
             negative_image_embeds=negative_image_embeds,
-            num_inference_steps=self.num_inference_steps,
+            num_inference_steps=num_inference_steps,  # Usa steps ajustados por tipo
             guidance_scale=guidance_scale  # Usa o guidance ajustado por tipo
         ).images[0]
         

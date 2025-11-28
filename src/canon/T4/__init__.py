@@ -3,7 +3,6 @@ from .process import (
     StableDiffusionInpainting,
     PaintByExample,
     KandinskyInpainting,
-    ResShiftInpainting,
     get_model,
     list_available_models,
     list_core_models,
@@ -11,17 +10,18 @@ from .process import (
     check_model_availability,
     run_all_inpainting_models,
 )
+from .utils import get_kandinsky_parameters
 
 __all__ = [
     "BaseInpaintingModel",
     "StableDiffusionInpainting",
     "PaintByExample",
     "KandinskyInpainting",
-    "ResShiftInpainting",
     "get_model",
     "list_available_models",
     "list_core_models",
     "list_optional_models",
     "check_model_availability",
     "run_all_inpainting_models",
+    "get_kandinsky_parameters",
 ]

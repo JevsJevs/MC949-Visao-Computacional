@@ -86,37 +86,17 @@ O projeto T4 implementa modelos de difusão para tarefas de restauração e expa
 
 ### Modelos Implementados
 
-**Modelos Principais (Core):**
-- Stable Diffusion Inpainting
-- Paint-by-Example
-- Kandinsky 2.2 Inpainting
+O projeto implementa 3 modelos de inpainting:
 
-**Modelos Opcionais:**
-- ResShift (requer instalação adicional)
+- **Stable Diffusion Inpainting**: Versátil e rápido, com suporte a prompts de texto opcionais
+- **Paint-by-Example**: Restauração guiada por exemplos visuais
+- **Kandinsky 2.2 Inpainting**: Otimizado para restauração de fotos vintage, com detecção automática de danos
 
+### Restauração de Fotos Antigas
 
-### Configurando ResShift (Opcional)
+O projeto inclui utilitários especializados para restauração de fotos antigas:
 
-O ResShift requer um ambiente virtual isolado com **Python 3.10** devido a incompatibilidade de versão do PyTorch.
+- **Detecção Automática de Danos**: Identifica rachaduras, manchas e áreas deterioradas
+- **Pré-processamento**: Redução de ruído e ajuste de contraste
 
-**Por que Python 3.10?**
-- ResShift usa PyTorch 2.1.1
-- PyTorch 2.1.1 só é compatível com Python 3.10.x
-- Versões mais novas (3.11+) não são suportadas
-
-```bash
-# Verificar se tem Python 3.10 instalado
-python3.10 --version
-
-# Se não tiver, instalar primeiro:
-# Ubuntu/Debian: sudo apt install python3.10 python3.10-venv
-
-# Instalação automática (recomendado)
-bash setup_resshift_venv.sh
-
-# Ativar o ambiente quando necessário
-source activate_resshift.sh
-
-# Desativar ambiente
-deactivate
-```
+Para mais detalhes, consulte `src/canon/T4/utils.py` (função `photo_restoration_utils`).

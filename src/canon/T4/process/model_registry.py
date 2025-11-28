@@ -3,24 +3,13 @@ from .base_model import BaseInpaintingModel
 from .stable_diffusion_inpainting import StableDiffusionInpainting
 from .paint_by_example import PaintByExample
 from .kandinsky_inpainting import KandinskyInpainting
-from .resshift_inpainting import ResShiftInpainting
 
 
-# Modelos principais (sempre disponíveis)
-CORE_MODELS: Dict[str, Type[BaseInpaintingModel]] = {
+# Modelos disponíveis
+MODEL_REGISTRY: Dict[str, Type[BaseInpaintingModel]] = {
     "stable_diffusion": StableDiffusionInpainting,
     "paint_by_example": PaintByExample,
     "kandinsky": KandinskyInpainting,
-}
-
-# Modelos opcionais (requerem instalação adicional)
-OPTIONAL_MODELS: Dict[str, Type[BaseInpaintingModel]] = {
-    "resshift": ResShiftInpainting,
-}
-
-MODEL_REGISTRY: Dict[str, Type[BaseInpaintingModel]] = {
-    **CORE_MODELS,
-    **OPTIONAL_MODELS
 }
 
 
@@ -33,30 +22,13 @@ def get_model(model_name: str, **kwargs) -> BaseInpaintingModel:
     return model_class(**kwargs)
 
 
-def list_available_models(include_optional: bool = True) -> List[str]:
-    """Lista modelos disponíveis.
-    
-    Args:
-        include_optional: Se True, inclui modelos opcionais que podem
-                         requerer instalação adicional (como ResShift)
+def list_available_models() -> List[str]:
+    """Lista todos os modelos disponíveis.
     
     Returns:
         Lista de nomes de modelos disponíveis
     """
-    if include_optional:
-        return list(MODEL_REGISTRY.keys())
-    else:
-        return list(CORE_MODELS.keys())
-
-
-def list_core_models() -> List[str]:
-    """Lista apenas modelos principais (sem dependências externas)."""
-    return list(CORE_MODELS.keys())
-
-
-def list_optional_models() -> List[str]:
-    """Lista modelos opcionais que requerem instalação adicional."""
-    return list(OPTIONAL_MODELS.keys())
+    return list(MODEL_REGISTRY.keys())
 
 
 def check_model_availability(model_name: str) -> Tuple[bool, str]:
