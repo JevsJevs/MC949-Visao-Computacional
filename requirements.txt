@@ -22,5 +22,6 @@ bsrgan
 gfpgan 
 basicsr 
 facexlib
+codeformer-pip
 
 -e ./src
