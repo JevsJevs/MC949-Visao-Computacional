@@ -19,5 +19,8 @@ scikit-image #Contem um dos comparadores
 torchmetrics
 realesrgan
 bsrgan
+gfpgan 
+basicsr 
+facexlib
 
 -e ./src
