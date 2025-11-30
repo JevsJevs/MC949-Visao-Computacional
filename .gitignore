@@ -15,7 +15,7 @@ __pycache__/
 *.egg
 
 # Kandinsky notebook
-notebooks/T4/Kandinsky_Colab_Test.ipynb/
+notebooks/T4/Kandinsky_Colab_Test.ipynb
 
 # Ignore large feature files (>100MB)
 **/sift_features.pkl
