@@ -34,8 +34,6 @@ env/
 .venv/
 .env/
 
-# Kandinsky notebook
-notebooks/T4/Kandinsky_Colab_Test.ipynb/
 
 # PyInstaller
 *.manifest
