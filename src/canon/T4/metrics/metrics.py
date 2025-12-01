@@ -38,7 +38,7 @@ def LPIPS(img1 : np.array,
     img1_tensor = preproc(img1).unsqueeze(0) # adiciona dimensao batch
     img2_tensor = preproc(img2).unsqueeze(0)
 
-    d = fn_perda(img1_tensor, img2_tensor)
+    d = fn_perda(img1_tensor.to(DEVICE), img2_tensor.to(DEVICE))
 
     return d.item()
 
@@ -114,8 +114,8 @@ def FID(realSet : list, genSet : list):
     model = __InceptionV3Features().to(DEVICE).eval()
 
     with torch.no_grad():
-        fv1 = np.array(model(realSet))
-        fv2 = np.array(model(genSet))
+        fv1 = model(realSet).cpu().numpy()
+        fv2 = model(genSet).cpu().numpy()
 
     return __FID_compute(fv1, fv2)
 
