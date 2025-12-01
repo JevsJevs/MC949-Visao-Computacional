@@ -63,6 +63,18 @@ else
 fi
 
 # ---------------------------
+# Patch dependencies (Fix basicsr vs torchvision)
+# ---------------------------
+PATCH_FILE=$(find .venv/lib/python3.*/site-packages/basicsr/data/ -name "degradations.py" 2>/dev/null | head -n 1)
+
+if [ -n "$PATCH_FILE" ]; then
+  echo "[INFO] Applying patch to basicsr: $PATCH_FILE"
+  sed -i 's/from torchvision.transforms.functional_tensor import rgb_to_grayscale/from torchvision.transforms._functional_tensor import rgb_to_grayscale/' "$PATCH_FILE"
+else
+  echo "[WARNING] basicsr/data/degradations.py not found. Skipping patch."
+fi
+
+# ---------------------------
 # Download project data (if needed)
 # ---------------------------
 if [ ! -d "$DATA_DIR" ]; then
