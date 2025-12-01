@@ -3,10 +3,19 @@ data/
 .venv
 venv/
 venv310/
+
+
 # Ignore Python cache files
 __pycache__/
 *.py[cod]
 *.pyo
+
+# Ignore Python egg info
+*.egg-info/
+*.egg
+
+# Kandinsky notebook
+notebooks/T4/Kandinsky_Colab_Test.ipynb
 
 # Ignore large feature files (>100MB)
 **/sift_features.pkl

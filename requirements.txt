@@ -17,5 +17,12 @@ lpips
 torchvision==0.16.0
 scikit-image #Contem um dos comparadores
 torchmetrics
-
+#=================
+torch>=2.0.0
+diffusers>=0.21.0
+transformers>=4.30.0
+accelerate>=0.20.0
+safetensors>=0.3.1
+Pillow>=9.0.0
+pyyaml>=6.0
 -e ./src
