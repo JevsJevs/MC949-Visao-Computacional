@@ -2,7 +2,7 @@ opencv-python
 notebook
 ipykernel
 matplotlib
-numpy
+numpy<2
 mypy
 pre-commit
 scikit-learn
@@ -11,7 +11,15 @@ tqdm
 open3d-python
 open3d
 kagglehub
-torch>=2.0.0
+
+#Image Comparators
+basicsr
+lpips
+torchvision
+scikit-image #Contem um dos comparadores
+torchmetrics
+#=================
+torch>=2.2.0
 diffusers>=0.21.0
 transformers>=4.30.0
 accelerate>=0.20.0
