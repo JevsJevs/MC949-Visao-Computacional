@@ -1,0 +1,142 @@
+import cv2
+import numpy as np
+import pandas as pd
+import torch
+from metrics.metrics import LPIPS, NIQE, SSIM
+from process.batch_utils import get_model, list_available_models
+from tqdm import tqdm
+
+from canon.config import BASE_DATA_PATH
+from canon.T4.utils import load_image_and_masks
+
+# Configurações de Caminhos
+DATA_DIR = BASE_DATA_PATH / "T4"
+IMAGES_DIR = DATA_DIR / "imagens"
+MASKS_DIR = DATA_DIR / "mascaras"
+OUTPUT_DIR = DATA_DIR / "results"
+
+
+def run_inpainting_pipeline():
+    # 1. Preparação
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    print(f"[INFO] Iniciando Pipeline no dispositivo: {device}")
+
+    # Listar modelos disponíveis
+    model_names = list_available_models()
+    print(f"[INFO] Modelos encontrados: {model_names}")
+
+    # Encontrar todas as imagens originais
+    image_files = sorted(
+        list(IMAGES_DIR.glob("*.jpg")) + list(IMAGES_DIR.glob("*.png"))
+    )
+
+    if not image_files:
+        print(f"[ERROR] Nenhuma imagem encontrada em {IMAGES_DIR}")
+        return
+
+    # 2. Execução (Iterar por Modelo -> Imagem -> Máscara)
+    # Iteramos por modelo primeiro para evitar carregar/descarregar VRAM repetidamente
+    for model_name in model_names:
+        print(f"\n{'='*40}")
+        print(f"[INFO] Carregando Modelo: {model_name}")
+        print(f"{'='*40}")
+
+        # Lista para armazenar resultados das métricas
+        model_metrics = []
+
+        try:
+            # Carrega o modelo
+            model = get_model(model_name, device=device)
+            model.load_model()
+
+            # Itera sobre as imagens
+            for image_path in tqdm(image_files, desc=f"Processando com {model_name}"):
+                image_stem = image_path.stem
+                print(f"\n{'='*40}")
+                print(f"[INFO] Processando Imagem: {image_stem}")
+                print(f"{'='*40}")
+
+                # Carregar imagem e máscaras
+                original_image, masks = load_image_and_masks(image_stem)
+                original_image = cv2.cvtColor(original_image, cv2.COLOR_BGR2RGB)
+
+                # --- INFERÊNCIA ---
+                for i, mask in enumerate(masks):
+                    try:
+                        mask_name = f"{image_stem}_mask_{i+1}"
+                        result = model.inpaint(
+                            original_image, mask, image_path=image_path
+                        )
+
+                        generated_image = result["image"]
+                        inference_time = result["inference_time"]
+
+                        # --- SALVAR RESULTADO ---
+                        # Cria estrutura de pasta: results/modelo/nome_imagem/
+                        save_folder = OUTPUT_DIR / model_name
+                        save_folder.mkdir(parents=True, exist_ok=True)
+
+                        save_filename = f"{mask_name}_inpainted.png"
+                        generated_image.save(save_folder / save_filename)
+
+                        # --- CÁLCULO DE MÉTRICAS ---
+                        generated_image = np.array(generated_image)
+
+                        # 1. SSIM (Maior é melhor, 1.0 é idêntico)
+                        ssim_val, ssim_diff = SSIM(original_image, generated_image)
+                        cv2.imwrite(
+                            save_folder / f"{mask_name}_ssim_diff.png", ssim_diff
+                        )
+
+                        # 2. LPIPS (Menor é melhor, 0.0 é idêntico)
+                        lpips_val = LPIPS(original_image, generated_image)
+
+                        # 3. NIQE (Menor é melhor, qualidade perceptual sem referência)
+                        niqe_val = NIQE(generated_image, crop_border=False)
+
+                        # --- REGISTRAR DADOS ---
+                        model_metrics.append(
+                            {
+                                "model": model_name,
+                                "image": image_stem,
+                                "mask": mask_name,
+                                "config": result["config"],
+                                "ssim": ssim_val,
+                                "lpips": lpips_val,
+                                "niqe": niqe_val,
+                                "inference_time": inference_time,
+                                "output_path": str(save_folder / save_filename),
+                            }
+                        )
+
+                    except Exception as e:
+                        print(
+                            f"[ERRO] Falha ao processar {image_stem} com máscara {i}: {e}"
+                        )
+
+            # Limpar VRAM após terminar com o modelo
+            model.unload_model()
+            torch.cuda.empty_cache()
+
+        except Exception as e:
+            print(f"[ERROR] Falha ao carregar modelo {model_name}: {e}")
+
+        finally:
+            # --- SALVAR MÉTRICAS DO MODELO ---
+            if model_metrics:
+                csv_path = OUTPUT_DIR / model_name / "metrics_summary.csv"
+                df = pd.DataFrame(model_metrics)
+                df.to_csv(csv_path, index=False)
+                print(f"\n[INFO] Métricas de {model_name} salvas em: {csv_path}")
+
+            else:
+                print("Nenhum resultado foi gerado.")
+
+    print(f"\n{'='*40}")
+    print("Pipeline Concluída!")
+    print(f"{'='*40}")
+
+
+if __name__ == "__main__":
+    run_pipeline()
