@@ -138,5 +138,132 @@ def run_inpainting_pipeline():
     print(f"{'='*40}")
 
 
+def generate_summary():
+    # Encontrar todos os arquivos de métricas por modelo
+    # Padrão esperado: metrics_NomeDoModelo.csv
+    csv_files = []
+    model_names = list_available_models()
+    for model in model_names:
+        csv_files.append(OUTPUT_DIR / model / "metrics_summary.csv")
+
+    if not csv_files:
+        print(f"Nenhum arquivo de métricas encontrado em {OUTPUT_DIR}")
+        return
+
+    print(f"Encontrados {len(csv_files)} arquivos de métricas.")
+
+    all_metrics = []
+
+    for file_path in csv_files:
+        try:
+            df = pd.read_csv(file_path)
+            all_metrics.append(df)
+
+        except Exception as e:
+            print(f"Erro ao ler {file_path}: {e}")
+
+    if not all_metrics:
+        print("Não foi possível carregar dados.")
+        return
+
+    # Concatena todos os dados em um único DataFrame
+    full_df = pd.concat(all_metrics, ignore_index=True)
+
+    # --- 1. Resumo Geral (Médias) ---
+    print("\n" + "=" * 60)
+    print("RESUMO DAS MÉTRICAS (Média por Modelo)")
+    print("=" * 60)
+
+    # Agrupa por modelo e calcula a média das métricas numéricas
+    summary = full_df.groupby("model")[
+        ["ssim", "lpips", "niqe", "inference_time"]
+    ].mean()
+    print(summary.round(4))
+
+    # Salva o resumo em CSV
+    summary_path = OUTPUT_DIR / "final_summary_averages.csv"
+    summary.to_csv(summary_path)
+    print(f"\n[Salvo] Resumo das médias salvo em: {summary_path}")
+
+    # --- 2. Análise de Melhores/Piores Casos ---
+    print("\n" + "=" * 60)
+    print("ANÁLISE DE EXTREMOS (Melhor e Pior caso por Modelo)")
+    print("=" * 60)
+
+    # Métricas para analisar e sua direção (True = Maior é melhor, False = Menor é melhor)
+    metrics_config = {
+        "ssim": {"higher_is_better": True},
+        "lpips": {"higher_is_better": False},
+        "niqe": {"higher_is_better": False},
+    }
+
+    extremes_list = []
+
+    for model_name in full_df["model"].unique():
+        print(f"\n--- Modelo: {model_name} ---")
+
+        model_df = full_df[full_df["model"] == model_name]
+
+        for metric, config in metrics_config.items():
+            if metric not in model_df.columns:
+                continue
+
+            # Remove NaNs para não quebrar a busca
+            valid_df = model_df.dropna(subset=[metric])
+
+            if valid_df.empty:
+                print(f"  {metric.upper()}: Sem dados válidos.")
+                continue
+
+            # Encontra min e max
+            min_row = valid_df.loc[valid_df[metric].idxmin()]
+            max_row = valid_df.loc[valid_df[metric].idxmax()]
+
+            # Define qual é o "Melhor" e o "Pior" baseado na métrica
+            if config["higher_is_better"]:
+                best_row = max_row
+                worst_row = min_row
+            else:
+                best_row = min_row
+                worst_row = max_row
+
+            print(f"\n{metric.upper()}:")
+            print(f"MELHOR: {best_row[metric]:.4f} | Img: {best_row['image']} | Mascara: {best_row['mask']}")
+            print(f"PIOR:   {worst_row[metric]:.4f} | Img: {worst_row['image']} | Mascara: {worst_row['mask']}")
+
+            extremes_list.append({
+                "Model": model_name,
+                "Metric": metric.upper(),
+                "Type": "BEST",
+                "Value": best_row[metric],
+                "Image": best_row['image'],
+                "Mask": best_row['mask'],
+                "Path": best_row['output_path'] if 'output_path' in best_row else 'N/A'
+            })
+            
+            extremes_list.append({
+                "Model": model_name,
+                "Metric": metric.upper(),
+                "Type": "WORST",
+                "Value": worst_row[metric],
+                "Image": worst_row['image'],
+                "Mask": worst_row['mask'],
+                "Path": worst_row['output_path'] if 'output_path' in worst_row else 'N/A'
+            })
+
+    # --- Salva os extremos em CSV ---
+    if extremes_list:
+        extremes_df = pd.DataFrame(extremes_list)
+        extremes_df = extremes_df.sort_values(by=["Model", "Metric", "Type"])
+        
+        extremes_path = OUTPUT_DIR / "final_summary_extremes.csv"
+        extremes_df.to_csv(extremes_path, index=False)
+        print(f"\n[Salvo] Relatório de extremos salvo em: {extremes_path}")
+
+    print("\n" + "=" * 60)
+    print("Análise Concluída.")
+
+
 if __name__ == "__main__":
-    run_pipeline()
+    # run_inpainting_pipeline()
+    generate_summary()
