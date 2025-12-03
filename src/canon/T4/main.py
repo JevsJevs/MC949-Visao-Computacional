@@ -1,3 +1,4 @@
+import argparse
 import cv2
 import numpy as np
 import pandas as pd
@@ -175,9 +176,9 @@ def generate_summary():
     print("=" * 60)
 
     # Agrupa por modelo e calcula a média das métricas numéricas
-    summary = full_df.groupby("model")[
-        ["ssim", "lpips", "niqe", "inference_time"]
-    ].mean()
+    summary = full_df.groupby("model")[["ssim", "lpips", "niqe", "inference_time"]].agg(
+        ["mean", "std"]
+    )
     print(summary.round(4))
 
     # Salva o resumo em CSV
@@ -228,34 +229,48 @@ def generate_summary():
                 worst_row = max_row
 
             print(f"\n{metric.upper()}:")
-            print(f"MELHOR: {best_row[metric]:.4f} | Img: {best_row['image']} | Mascara: {best_row['mask']}")
-            print(f"PIOR:   {worst_row[metric]:.4f} | Img: {worst_row['image']} | Mascara: {worst_row['mask']}")
+            print(
+                f"MELHOR: {best_row[metric]:.4f} | Img: {best_row['image']} | Mascara: {best_row['mask']}"
+            )
+            print(
+                f"PIOR:   {worst_row[metric]:.4f} | Img: {worst_row['image']} | Mascara: {worst_row['mask']}"
+            )
 
-            extremes_list.append({
-                "Model": model_name,
-                "Metric": metric.upper(),
-                "Type": "BEST",
-                "Value": best_row[metric],
-                "Image": best_row['image'],
-                "Mask": best_row['mask'],
-                "Path": best_row['output_path'] if 'output_path' in best_row else 'N/A'
-            })
-            
-            extremes_list.append({
-                "Model": model_name,
-                "Metric": metric.upper(),
-                "Type": "WORST",
-                "Value": worst_row[metric],
-                "Image": worst_row['image'],
-                "Mask": worst_row['mask'],
-                "Path": worst_row['output_path'] if 'output_path' in worst_row else 'N/A'
-            })
+            extremes_list.append(
+                {
+                    "Model": model_name,
+                    "Metric": metric.upper(),
+                    "Type": "BEST",
+                    "Value": best_row[metric],
+                    "Image": best_row["image"],
+                    "Mask": best_row["mask"],
+                    "Path": (
+                        best_row["output_path"] if "output_path" in best_row else "N/A"
+                    ),
+                }
+            )
+
+            extremes_list.append(
+                {
+                    "Model": model_name,
+                    "Metric": metric.upper(),
+                    "Type": "WORST",
+                    "Value": worst_row[metric],
+                    "Image": worst_row["image"],
+                    "Mask": worst_row["mask"],
+                    "Path": (
+                        worst_row["output_path"]
+                        if "output_path" in worst_row
+                        else "N/A"
+                    ),
+                }
+            )
 
     # --- Salva os extremos em CSV ---
     if extremes_list:
         extremes_df = pd.DataFrame(extremes_list)
         extremes_df = extremes_df.sort_values(by=["Model", "Metric", "Type"])
-        
+
         extremes_path = OUTPUT_DIR / "final_summary_extremes.csv"
         extremes_df.to_csv(extremes_path, index=False)
         print(f"\n[Salvo] Relatório de extremos salvo em: {extremes_path}")
@@ -264,6 +279,25 @@ def generate_summary():
     print("Análise Concluída.")
 
 
+# --- Parser e Entry Point ---
 if __name__ == "__main__":
-    # run_inpainting_pipeline()
-    generate_summary()
+    # Configurar argparse para receber argumentos
+    parser = argparse.ArgumentParser(description="Pipeline de Modelos de Difusão")
+    parser.add_argument(
+        "--task",
+        type=str,
+        choices=["inpainting", "outscaling", "summary"],
+        required=True,
+        help="Tarefa a se realizar (inpainting, outscaling ou summary)",
+    )
+
+    args = parser.parse_args()
+    task = args.task
+    if task == "inpainting":
+        run_inpainting_pipeline()
+    elif task == "upscaling":
+        raise NotImplementedError(
+            "Pipeline não implementada no script, execute os notebooks `notebboks/T4/S3-1.0-victor-upscaling-bsrgan.ipynb` e `notebooks/T4/S3-1.0-victor-upscaling-stable-diffusion.ipynb` para testar os modelos"
+        )
+    else:
+        generate_summary()

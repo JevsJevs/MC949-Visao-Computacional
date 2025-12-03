@@ -1,17 +1,31 @@
 #!/bin/bash
 set -e
 
-# ============================================================
-# CONFIGURATION: Change this variable to select your project
-# ============================================================
-# Edit the line below to change which project to setup:
-#   T1 - Panoramas
-#   T2 - 3D Reconstruction
-#   T4 - Inpainting Models
+# ---------------------------
+# Default values
+# ---------------------------
 PROJECT="T4"
 
-# Valid projects: T1, T2, T4
+# ---------------------------
+# Parse and validate project
+# ---------------------------
 VALID_PROJECTS=("T1" "T2" "T4")
+
+while [[ $# -gt 0 ]]; do
+  key="$1"
+  case $key in
+    --project)
+      PROJECT="$2"
+      shift # past argument
+      shift # past value
+      ;;
+    *)
+      echo "Unknown argument: $1"
+      echo "Usage: $0 --project <${VALID_PROJECTS[*]}>"
+      exit 1
+      ;;
+  esac
+done
 
 if [[ ! " ${VALID_PROJECTS[@]} " =~ " ${PROJECT} " ]]; then
   echo "[ERROR] Project '$PROJECT' is not supported."
@@ -39,7 +53,7 @@ case "$PROJECT" in
     IMAGE_DIR="data/T4/imagens"
     MASK_DIR="data/T4/mascaras"
     RES_DIR="data/T4/results"
-    RUN_PIPELINE=false
+    RUN_PIPELINE=true
     ;;
 esac
 
@@ -88,26 +102,35 @@ fi
 # Run project-specific pipeline
 # ---------------------------
 if [ "$RUN_PIPELINE" = true ]; then
+  if [ ! -d "$IMAGE_DIR" ]; then
+    echo "[ERROR] Dataset folder '$IMAGE_DIR' not found. Exiting."
+    exit 1
+  fi
+
+  if [ ! -d "$RES_DIR" ]; then
+    mkdir -p "$RES_DIR"
+  fi
+
   case "$PROJECT" in
     T2)
-      if [ ! -d "$IMAGE_DIR" ]; then
-        echo "[ERROR] Dataset folder '$IMAGE_DIR' not found. Exiting."
-        exit 1
-      fi
-
-      if [ ! -d "$RES_DIR" ]; then
-        mkdir -p "$RES_DIR"
-      fi
-
       echo "[INFO] Running 3D reconstruction pipeline on project 'T2', dataset 'GustavIIAdolf'..."
       python3 "src/canon/T2/main.py" \
         --image_dir "$IMAGE_DIR" \
         --res_dir "$RES_DIR" \
         --densify False
+      ;;
+    T4)
+      if [ ! -d "$MASK_DIR" ]; then
+        echo "[ERROR] Dataset folder '$MASK_DIR' not found. Exiting."
+        exit 1
+      fi
 
-      echo "[INFO] Pipeline finished successfully! Results saved in ${RES_DIR}"
+      echo "[INFO] Running inpainting pipeline on project 'T4'..."
+      python3 src/canon/T4/main.py --task inpainting
+      python3 src/canon/T4/main.py --task summary
       ;;
   esac
+  echo "[INFO] Pipeline finished successfully! Results saved in ${RES_DIR}"
 else
   echo "[INFO] $PROJECT setup complete! Data available at: $DATA_DIR"
   echo ""
@@ -116,21 +139,6 @@ else
     T1)
       echo "[INFO] T1 data downloaded and ready to use."
       echo "[INFO] Check notebooks/T1/ for available notebooks."
-      ;;
-    T4)
-      if [ ! -d "$RES_DIR" ]; then
-        mkdir -p "$RES_DIR"
-      fi
-      
-      echo "[INFO] Images folder: $IMAGE_DIR"
-      echo "[INFO] Masks folder: $MASK_DIR"
-      echo "[INFO] Results folder: $RES_DIR"
-      echo ""
-      echo "[INFO] To use the inpainting models, run:"
-      echo "  jupyter notebook notebooks/T4/S2-1.0-hpbv-inpainting-models.ipynb"
-      echo ""
-      echo "[INFO] Or test models directly:"
-      echo "  python3 src/canon/T4/process/test_models.py"
       ;;
   esac
 fi
