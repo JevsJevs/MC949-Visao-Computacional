@@ -27,10 +27,6 @@ Como o repositório armazena o código referente a 4 projetos distintos, cada um
 │   |   ├── interim
 │   |   ├── raw
 │   |   └── results
-│   ├── T3
-│   |   ├── interim
-│   |   ├── raw
-│   |   └── results
 │   └── T4
 |       ├── imagens
 │       ├── mascaras
@@ -40,7 +36,6 @@ Como o repositório armazena o código referente a 4 projetos distintos, cada um
 ├── notebooks
 │   ├── T1
 │   ├── T2
-│   ├── T3
 │   └── T4
 ├── requirements.txt
 ├── run.sh
@@ -49,9 +44,6 @@ Como o repositório armazena o código referente a 4 projetos distintos, cada um
     │   ├── T1
     │   ├── T2
     │   ├── T4
-    │   │   ├── config
-    │   │   ├── process (modelos de inpainting)
-    │   │   └── utils.py
     │   ├── config.py
     │   ├── download_data.py
     │   └── utils
@@ -64,21 +56,21 @@ Para executar os projetos, foi disponibilizado um script `run.sh` na raiz do rep
 
 1. Criação do ambiente virtual e instalação das bibliotecas necessárias
 2. Download dos dados do projeto especificado
-3. Execução da pipeline (no caso do T2)
+3. Execução da pipeline (no caso do T2 e T4)
 
 ### Como Usar
 
-Edite a variável `PROJECT` no arquivo `run.sh` (linha 5) para o projeto desejado (`T1`, `T2` ou `T4`), e execute os seguintes comandos na raiz do repositório:
+Execute os seguintes comandos na raiz do repositório, substituindo `TX` pelo projeto desejado (`T1`, `T2` ou `T4`):
 
 ```bash
 chmod +x run.sh
-./run.sh
+./run.sh --project TX
 ```
 
 **Exemplos:**
-- Para T1: `PROJECT="T1"` - Baixa os dados e prepara o ambiente
-- Para T2: `PROJECT="T2"` - Baixa os dados e executa automaticamente a pipeline de reconstrução 3D  
-- Para T4: `PROJECT="T4"` - Baixa imagens e máscaras do Kaggle
+- Para T1: `./run.sh --project T1` - Baixa os dados e prepara o ambiente
+- Para T2: `./run.sh --project T2` - Baixa os dados e executa automaticamente a pipeline de reconstrução 3D  
+- Para T4: `./run.sh --project T4` - Baixa imagens e executa automaticamente a pipeline de inpainting
 
 ## Projeto T4: Modelos de Difusão para Restauração de Imagens
 
