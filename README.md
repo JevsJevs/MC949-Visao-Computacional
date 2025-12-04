@@ -11,7 +11,7 @@ Template de projeto inspirado no [Cookiecutter-data-science](https://cookiecutte
     - `interim/`: Versões pré-processadas dos dados originais
     - `results/`: Resultados finais do projeto
 - `docs/`: Documentação do projeto
-- `models/`: Modelos que serão criados
+- `models/`: Modelos pré-treinados e checkpoints
 - `notebooks/`: Notebooks de playground para fins de pesquisa
 - `src/`: Código definitivo do projeto
 
@@ -27,19 +27,15 @@ Como o repositório armazena o código referente a 4 projetos distintos, cada um
 │   |   ├── interim
 │   |   ├── raw
 │   |   └── results
-│   ├── T3
-│   |   ├── interim
-│   |   ├── raw
-│   |   └── results
 │   └── T4
-|       ├── interim
-│       ├── raw
+|       ├── imagens
+│       ├── mascaras
 │       └── results
 ├── docs
+├── models
 ├── notebooks
 │   ├── T1
 │   ├── T2
-│   ├── T3
 │   └── T4
 ├── requirements.txt
 ├── run.sh
@@ -47,23 +43,52 @@ Como o repositório armazena o código referente a 4 projetos distintos, cada um
     ├── canon
     │   ├── T1
     │   ├── T2
+    │   ├── T4
     │   ├── config.py
     │   ├── download_data.py
     │   └── utils
     └── pyproject.toml
 ```
 
-## Execução do Projeto T2
+## Execução dos Projetos
 
-Para executar o projeto, foi disponibilizado um script `run.sh` na raiz do repositório. A execução do script realiza as seguintes etapas:
+Para executar os projetos, foi disponibilizado um script `run.sh` na raiz do repositório. A execução do script realiza as seguintes etapas:
 
 1. Criação do ambiente virtual e instalação das bibliotecas necessárias
-2. Download dos dados
-3. Execução da pipeline do projeto
+2. Download dos dados do projeto especificado
+3. Execução da pipeline (no caso do T2 e T4)
 
-Os seguintes comandos devem ser executados na raiz do repositório:
+### Como Usar
+
+Execute os seguintes comandos na raiz do repositório, substituindo `TX` pelo projeto desejado (`T1`, `T2` ou `T4`):
 
 ```bash
 chmod +x run.sh
-./run.sh
+./run.sh --project TX
 ```
+
+**Exemplos:**
+- Para T1: `./run.sh --project T1` - Baixa os dados e prepara o ambiente
+- Para T2: `./run.sh --project T2` - Baixa os dados e executa automaticamente a pipeline de reconstrução 3D  
+- Para T4: `./run.sh --project T4` - Baixa imagens e executa automaticamente a pipeline de inpainting
+
+## Projeto T4: Modelos de Difusão para Restauração de Imagens
+
+O projeto T4 implementa modelos de difusão para tarefas de restauração e expansão de imagens (inpainting).
+
+### Modelos Implementados
+
+O projeto implementa 3 modelos de inpainting:
+
+- **Stable Diffusion Inpainting**: Versátil e rápido, com suporte a prompts de texto opcionais
+- **Paint-by-Example**: Restauração guiada por exemplos visuais
+- **Kandinsky 2.2 Inpainting**: Otimizado para restauração de fotos vintage, com detecção automática de danos
+
+### Restauração de Fotos Antigas
+
+O projeto inclui utilitários especializados para restauração de fotos antigas:
+
+- **Detecção Automática de Danos**: Identifica rachaduras, manchas e áreas deterioradas
+- **Pré-processamento**: Redução de ruído e ajuste de contraste
+
+Para mais detalhes, consulte `src/canon/T4/utils.py` (função `photo_restoration_utils`).
